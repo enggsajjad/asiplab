@@ -1,0 +1,15 @@
+[submodule "asip_upgrade"]
+	path = asip_upgrade
+	url = https://github.com/enggsajjad/asip_upgrade.git
+[submodule "asip_epp"]
+	path = asip_epp
+	url = https://github.com/enggsajjad/asip_epp.git
+[submodule "asip_docs"]
+	path = asip_docs
+	url = https://github.com/enggsajjad/asip_docs.git
+[submodule "asip_projects"]
+	path = asip_projects
+	url = https://github.com/enggsajjad/asip_projects.git
+[submodule "asip_datasheet"]
+	path = asip_datasheet
+	url = https://github.com/enggsajjad/asip_datasheet.git
