@@ -1,0 +1,200 @@
+--------------------------------------------
+ (C) ASIP Solutions 2005-2011 
+     ASIP Meister 2.3.4 
+     October 2011
+--------------------------------------------
+
+     Install Guide
+
+Step 1.  Confirming Operation Environment
+-----------------------------------------
+
+ASIP Meister requires the following environment. Otherwise, operation is not 
+guaranteed. 
+
+	OS:    RedHat Enterprise Linux WS 4 32-bit
+	Java:  Java Runtime Environment 6 32-bit
+
+Download and install Java Runtime Environment from the Sun Web site. 
+
+	http://java.sun.com/javase/downloads/
+
+
+Step 2. Expanding the Package
+-----------------------------
+
+ASIP Meister can be expanded in any directory. 
+It is normally installed in /usr/local. 
+
+e.g. Input the following commands to install ASIP Meister in /usr/local. 
+
+	$ su -
+	# cd /usr/local
+	# tar zxf AM_Std_2.3.4.tgz
+
+If the expansion is not successful, consult the administrator of the machine. 
+
+
+Step 3. Installing Application Program Development Environment Generation Tools
+-------------------------------------------------------------------------------
+ (The step 3 is exclusively for Std. edition and not required for Basic edition.)
+
+Install application program development environment generation tools as follows.
+
+Step 3-1. Preparing for Installation
+------------------------------------
+
+Create a temporary directory and copy the following files to the directory 
+from the CDs of ASIP Meister and the application program development environment 
+generation tools.
+
+1. Makefile.APDEV (in the root directory of the ASIP Meister CD)
+You can find the following files in the CD of application program development 
+environment generation tools.
+2. binutils-2.16.1.tar.bz2
+3. gcc-4.2.2.tar.bz2
+4. gdb-6.4.tar.gz
+5. newlib-1.14.0.tar.gz
+
+The directory you create in this step can be deleted after the installation. 
+Then, create a directory for installing development environment generation tools 
+and set the environment variables. 
+Set the environment variable ASIP_APDEV_SRCROOT as the directory to install the tools, 
+and the environment variable ASIPmeister_HOME as the directory for the expanded 
+ASIPmeister respectively. 
+
+e.g. Input the following commands to install ASIP Meister in /usr/local and 
+the generation tools in /home/xxx/ASIP_APs. 
+
+	$ mkdir /home/xxx/ASIP_APs
+	$ export ASIP_APDEV_SRCROOT=/home/xxx/ASIP_APs
+	$ export ASIPmeister_HOME=/usr/local/ASIPmeister
+
+
+Step 3-2. Installing the application program development environment generation tools
+-------------------------------------------------------------------------------------
+
+Execute Makefile.APDEV to install the generation tools. 
+Set the directory for storing Makefile.APDEV as the current directory and 
+execute Makefile.APDEV.  
+
+e.g. 
+	$ cd /home/xxx/temp
+	$ make -f Makefile.APDEV
+
+Note: Execute "make -f Makefile.APDEV install" with root authority. 
+
+After the execution, gcc¡¤binutils, gdb and newlib
+in the directory set as the environment variable ASIP_APDEV_SRCROOT. 
+The installed generation tools will be used by ASIP Meister and should not be deleted 
+or changed. 
+
+
+Step 4. Obtaining Machine Information
+-------------------------------------
+
+You need a license to use ASIP Meister. 
+To request a license, your machine information is necessary. 
+
+Step 4a. When using one machine (Node-Locked License)
+-----------------------------------------------------
+
+MAC address of network adaptor is required. 
+Input the following command to find your MAC address: 
+	$ /sbin/ifconfig eth0
+
+request a license using the MAC Address (HWaddr). 
+
+Step 4b. When using more than one machine (Floating License)
+------------------------------------------------------------
+
+MAC address of server machine is required.
+
+
+Step 5. Installing License File
+-------------------------------
+
+We issue a license file upon your request for a license. 
+Install the license file according to the following procedure. 
+
+
+Step 5a. When using one machine (Node-Locked License)
+-----------------------------------------------------
+
+Copy the license file to any directory. 
+
+For example, if you wish to name the license file ASIPmeister.lic and copy it 
+in /usr/local/ASIPmeister, input the following command. 
+
+	# cp ASIPmeister.lic /usr/local/ASIPmeister
+
+
+Step 5b. When using more than one machine (Floating License)
+------------------------------------------------------------
+
+On license server machine, you need to install license server software
+and license file. The license server software is supplied in a separate
+package. Please consult the installation guide in license server package.
+
+
+Step 6. Setting License Environment Variables
+---------------------------------------------
+
+Step 6a. When using one machine (Node-Locked License)
+-----------------------------------------------------
+
+Set the path to the license file as environment variable ASIPS_LICENSE. 
+
+  $ export ASIPS_LICENSE=/usr/local/ASIPmeister/ASIPmeister.lic
+
+
+Step 6b. When using more than one machine (Floating License)
+------------------------------------------------------------
+
+Set the name or IP address and port number of the license server in
+environment variable ASIPS_LICENSE.
+
+  $ export ASIPS_LICENSE=29000@asipserver
+
+
+Step 7. Setting Environment Variables
+-------------------------------------
+
+Add the ASIP Meister program directory and the path to Java Runtime Environment 
+to the environment variable PATH, before setting the installation directory for 
+application program development environment generation tools as the environment 
+variable ASIP_APDEV_SRCROOT. 
+
+
+e.g. Follow the below procedure if ASIPmeister is in /usr/local, Java Runtime 
+Environment (jre1.6.0_05) is in /usr/java, and the installed generation tools are 
+in /home/xxx/ASIP_APs. 
+
+	$ export PATH=/usr/java/jre1.6.0_05/bin:$PATH
+	$ export PATH=/usr/local/ASIPmeister/bin:$PATH
+	$ export ASIP_APDEV_SRCROOT=/home/xxx/ASIP_APs
+
+It is helpful to create a setup file to set the above. 
+
+ASIPmeister.setup.sample in the sample directory of ASIP Meister can be edited 
+to fit your environment. 
+
+The setting is completed by reading the setup file. 
+
+	$ . /usr/local/ASIPmeister/share/ASIPmeister.setup.sample
+
+
+Step 8. Starting ASIP Meister
+-----------------------------
+
+Input the following command to start ASIP Meister. 
+
+	$ ASIPmeister
+
+To open a saved design file, you can specify the file by the following command. 
+
+	$ ASIPmeister <design_file_name>
+e.g. 
+	$ ASIPmeister sample.pdb
+
+

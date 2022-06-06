@@ -1,0 +1,405 @@
+diff -cr gdb-6.4/gdb/brownie32-tdep.c gdb-6.4/gdb/brownie32-tdep.c
+*** gdb-6.4/gdb/brownie32-tdep.c	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/gdb/brownie32-tdep.c	2008-11-11 16:46:19.000000000 +0900
+***************
+*** 58,63 ****
+--- 58,65 ----
+  #include "infcall.h"
+  #include "floatformat.h"
+  
++ #include "opcode/libccg-brownie32.h"
++ 
+  #define DEBUGPRINT printf
+  static const struct objfile_data *brownie32_pdr_data;
+  
+***************
+*** 2937,2942 ****
+--- 2939,2998 ----
+    internal_error (__FILE__, __LINE__, _("unknown ABI string"));
+  }
+  
++ const char *
++ libccg_brownie32_register_name (int regnum)
++ {
++   const char *name = 0;
++   const struct bfd_arch_info *info = TARGET_ARCHITECTURE;
++   if (regnum < NUM_REGS)
++   {
++     switch (info->mach)
++     {
++     case bfd_mach_brownie32_std:
++       name = brownie32_register_name (regnum);
++       break;
++     default:
++       name = brownie32_register_name (regnum);
++       break;
++     }
++   }
++   else
++   {
++     name = libccg_get_register_name_by_regnum (regnum);
++   }
++ 
++   return name;
++ }
++ 
++ struct type *
++ libccg_brownie32_register_type (struct gdbarch *gdbarch, int regnum)
++ {
++   struct type *t = 0;
++ 
++   if (regnum < NUM_REGS)
++   {
++     t = brownie32_register_type (gdbarch, regnum);
++   }
++   else
++   {
++     int width = libccg_get_register_width_by_regnum (regnum);
++     switch (width)
++     {
++     case   8: t = builtin_type_int8;   break;
++     case  16: t = builtin_type_int16;  break;
++     case  32: t = builtin_type_int32;  break;
++     case  64: t = builtin_type_int64;  break;
++     case 128: t = builtin_type_int128; break;
++     default:  t = builtin_type_void;   break;
++     }
++   }
++ 
++   return t;
++ }
++ 
++ /*libccg_brownie32_register_byte ()      may be needed. */
++ /*libccg_brownie32_register_sim_regno () may be needed. */
++ 
+  static struct gdbarch *
+  brownie32_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
+  {
+***************
+*** 3274,3279 ****
+--- 3330,3342 ----
+    frame_base_append_sniffer (gdbarch, brownie32_stub_frame_base_sniffer);
+    frame_base_append_sniffer (gdbarch, brownie32_insn32_frame_base_sniffer);
+  
++   if (num_regs < libccg_get_num_of_all_regs ())
++   {
++     set_gdbarch_num_regs (gdbarch, libccg_get_num_of_all_regs ());
++     set_gdbarch_register_name (gdbarch, libccg_brownie32_register_name);
++     set_gdbarch_register_type (gdbarch, libccg_brownie32_register_type);
++   }
++ 
+    return gdbarch;
+  }
+  
+diff -cr gdb-6.4/include/opcode/brownie32.h gdb-6.4/include/opcode/brownie32.h
+*** gdb-6.4/include/opcode/brownie32.h	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/include/opcode/brownie32.h	2008-11-11 16:24:13.000000000 +0900
+***************
+*** 26,31 ****
+--- 26,34 ----
+  #ifndef _BROWNIE32_H_
+  #define _BROWNIE32_H_
+  
++ /* Use instruction extention library. */
++ #include "opcode/libccg-brownie32.h"
++ 
+  /* Following 1 opecode is used for all RR-TYPE instructions */
+  #define  RRTYPOP     0x00000001
+  
+diff -cr gdb-6.4/opcodes/Makefile.am gdb-6.4/opcodes/Makefile.am
+*** gdb-6.4/opcodes/Makefile.am	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/opcodes/Makefile.am	2008-11-11 16:28:00.000000000 +0900
+***************
+*** 319,325 ****
+  disassemble.lo: disassemble.c $(INCDIR)/dis-asm.h
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $(srcdir)/disassemble.c
+  
+! libopcodes_la_SOURCES =  dis-buf.c disassemble.c dis-init.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+--- 319,325 ----
+  disassemble.lo: disassemble.c $(INCDIR)/dis-asm.h
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $(srcdir)/disassemble.c
+  
+! libopcodes_la_SOURCES =  dis-buf.c disassemble.c dis-init.c   simple-expr.tab.c libccg-brownie32.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+***************
+*** 530,535 ****
+--- 530,559 ----
+  sh-dis.lo: sh-dis.c
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $<
+  
++ # Instruction extending library for brownie32
++ simple-expr.tab.c: $(srcdir)/simple-expr.y
++ 	${YACC} -y -d -b simple-expr -p libccg_  $<
++ simple-expr-scanner.c: $(srcdir)/simple-expr.l
++ 	${LEX}  -l -i -8 -Plibccg_ -o$@ $<
++ simple-expr.tab.c: \
++ 	simple-expr-scanner.c
++ simple-expr.tab.o: \
++ 	$(srcdir)/simple-expr.y\
++ 	$(srcdir)/simple-expr.l\
++ 	simple-expr-scanner.c\
++ 	simple-expr.tab.c
++ libccg-brownie32.o: \
++ 	$(INCDIR)/opcode/libccg-brownie32.h\
++ 	$(srcdir)/libccg-brownie32.c
++ #libopcodes_a_LIBADD += simple-expr.tab.o libccg-brownie32.o
++ LIBCCG_OBJS = \
++ 	simple-expr.tab.c\
++ 	simple-expr-scanner.c\
++ 	simple-expr.tab.c\
++ 	simple-expr.tab.o\
++ 	libccg-brownie32.o\
++ 
++ 
+  # This dependency stuff is copied from BFD.
+  
+  DEP: dep.sed $(CFILES) $(HFILES) config.h
+diff -cr gdb-6.4/opcodes/Makefile.in gdb-6.4/opcodes/Makefile.in
+*** gdb-6.4/opcodes/Makefile.in	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/opcodes/Makefile.in	2008-11-11 16:30:26.000000000 +0900
+***************
+*** 77,83 ****
+  bfdlibLTLIBRARIES_INSTALL = $(INSTALL)
+  LTLIBRARIES = $(bfdlib_LTLIBRARIES)
+  am__DEPENDENCIES_1 =
+! am_libopcodes_la_OBJECTS = dis-buf.lo disassemble.lo dis-init.lo
+  libopcodes_la_OBJECTS = $(am_libopcodes_la_OBJECTS)
+  DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
+  depcomp =
+--- 77,83 ----
+  bfdlibLTLIBRARIES_INSTALL = $(INSTALL)
+  LTLIBRARIES = $(bfdlib_LTLIBRARIES)
+  am__DEPENDENCIES_1 =
+! am_libopcodes_la_OBJECTS = dis-buf.lo disassemble.lo dis-init.lo   simple-expr.tab.lo libccg-brownie32.lo 
+  libopcodes_la_OBJECTS = $(am_libopcodes_la_OBJECTS)
+  DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
+  depcomp =
+***************
+*** 537,543 ****
+  # that's where the version number in Makefile comes from.
+  CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/configure.in
+  INCLUDES = -D_GNU_SOURCE -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ -I$(srcdir)/../intl -I../intl
+! libopcodes_la_SOURCES = dis-buf.c disassemble.c dis-init.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+--- 537,543 ----
+  # that's where the version number in Makefile comes from.
+  CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/configure.in
+  INCLUDES = -D_GNU_SOURCE -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ -I$(srcdir)/../intl -I../intl
+! libopcodes_la_SOURCES = dis-buf.c disassemble.c dis-init.c simple-expr.tab.c libccg-brownie32.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+***************
+*** 1073,1078 ****
+--- 1073,1113 ----
+  sh-dis.lo: sh-dis.c
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $<
+  
++ # Instruction extending library for brownie32
++ simple-expr.tab.c: $(srcdir)/simple-expr.y
++ 	${YACC} -y -d -b simple-expr -p libccg_  $<
++ simple-expr.tab.c: simple-expr-scanner.c
++ simple-expr-scanner.c: $(srcdir)/simple-expr.l
++ 	${LEX}  -l -i -8 -Plibccg_ -o$@ $<
++ simple-expr.tab.o: \
++ 	$(srcdir)/simple-expr.y\
++ 	$(srcdir)/simple-expr.l\
++ 	simple-expr-scanner.c\
++ 	simple-expr.tab.c
++ libccg-brownie32.o: \
++ 	$(INCDIR)/opcode/libccg-brownie32.h\
++ 	$(srcdir)/libccg-brownie32.c
++ simple-expr.tab.lo: simple-expr.tab.c
++ 	$(LIBTOOL) --mode=compile ${filter-out -Werror, $(COMPILE)} -c @archdefs@ simple-expr.tab.c
++ simple-expr.tab.lo: simple-expr-scanner.c
++ libccg-brownie32.lo: $(srcdir)/libccg-brownie32.c
++ 	$(LIBTOOL) --mode=compile ${filter-out -Werror, $(COMPILE)} -c @archdefs@ $(srcdir)/libccg-brownie32.c
++ simple-expr.tab.lo: \
++ 	$(srcdir)/simple-expr.y\
++ 	$(srcdir)/simple-expr.l\
++ 	simple-expr-scanner.c\
++ 	simple-expr.tab.c
++ libccg-brownie32.lo: \
++ 	$(INCDIR)/opcode/libccg-brownie32.h\
++ 	$(srcdir)/libccg-brownie32.c
++ #libopcodes_a_LIBADD += simple-expr.tab.o libccg-brownie32.o
++ LIBCCG_OBJS = \
++ 	simple-expr.tab.c\
++ 	simple-expr-scanner.c\
++ 	simple-expr.tab.c\
++ 	simple-expr.tab.o\
++ 	libccg-brownie32.o\
++ 
+  # This dependency stuff is copied from BFD.
+  
+  DEP: dep.sed $(CFILES) $(HFILES) config.h
+diff -cr gdb-6.4/opcodes/brownie32-dis.c gdb-6.4/opcodes/brownie32-dis.c
+*** gdb-6.4/opcodes/brownie32-dis.c	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/opcodes/brownie32-dis.c	2008-11-11 16:34:01.000000000 +0900
+***************
+*** 680,687 ****
+        (unsigned long) NULL
+    };
+    int brownie32_insn_type_num = ((sizeof brownie32_insn_type) / (sizeof (unsigned long))) - 1;
+!   int status =
+!     (*info->read_memory_func) (memaddr, (bfd_byte *) &buffer[0], 4, info);
+  
+    if (status != 0)
+      {
+--- 680,716 ----
+        (unsigned long) NULL
+    };
+    int brownie32_insn_type_num = ((sizeof brownie32_insn_type) / (sizeof (unsigned long))) - 1;
+!   int status;
+! 
+!   /* Use instruction extention library. */
+!   {
+!     uint64_t  bits;
+!     insn_id_t insn_id;
+!     bfd_byte  membuff[4];
+!     int stat;
+! 
+!     stat = info->read_memory_func (memaddr, membuff, 4, info);
+!     if (stat)
+!     {
+!       info->memory_error_func (stat, memaddr, info);
+!       return -1;
+!     }
+! 
+!     bits = bfd_getb32 (membuff);
+! 
+!     insn_id = libccg_decode_insn (bits);
+!     if (0 <= (int)insn_id
+!         && (int)insn_id < E_INSN_ID_END)
+!     {
+!       static char disasm_buff[256];
+!       int len = libccg_get_insn_length (insn_id);
+!       libccg_disasm_insn (bits, &disasm_buff[0]);
+! 	  (*info->fprintf_func) (info->stream, "%s", &disasm_buff[0]);
+!       return len;
+!     }
+!   }
+! 
+!   status=(*info->read_memory_func) (memaddr, (bfd_byte *) &buffer[0], 4, info);
+  
+    if (status != 0)
+      {
+diff -cr gdb-6.4/sim/brownie32/Makefile.in gdb-6.4/sim/brownie32/Makefile.in
+*** gdb-6.4/sim/brownie32/Makefile.in	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/sim/brownie32/Makefile.in	2008-11-11 16:49:40.000000000 +0900
+***************
+*** 40,46 ****
+--- 40,49 ----
+  BROWNIE32_EXTRA_OBJS = @brownie32_extra_objs@
+  BROWNIE32_EXTRA_LIBS = @brownie32_extra_libs@
+  
++ LIBCCG_OBJS = libccg-sim-brownie32.o
++ 
+  SIM_OBJS = \
++ 	${LIBCCG_OBJS} \
+  	$(SIM_@sim_gen@_OBJ) \
+  	$(SIM_NEW_COMMON_OBJS) \
+  	$(BROWNIE32_EXTRA_OBJS) \
+***************
+*** 394,396 ****
+--- 397,403 ----
+  
+  distclean-extra:
+  	rm -f multi-include.h multi-run.c
++ 
++ libccg-sim-brownie32.o: libccg-sim-brownie32.c
++ libccg-sim-brownie32.o: libccg-sim-brownie32.h
++ 
+diff -cr gdb-6.4/sim/brownie32/interp.c gdb-6.4/sim/brownie32/interp.c
+*** gdb-6.4/sim/brownie32/interp.c	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/sim/brownie32/interp.c	2008-11-11 16:54:39.000000000 +0900
+***************
+*** 351,356 ****
+--- 351,360 ----
+    CPU_INSN_NAME (cpu) = get_insn_name;
+    CPU_MAX_INSNS (cpu) = nr_itable_entries;
+  
++ 
++   /* Initialize exteded part of the simulator. */
++   libccg_init_sim ();
++ 
+    STATE = 0;
+    
+    if (sim_pre_argv_init (sd, argv[0]) != SIM_RC_OK)
+***************
+*** 884,889 ****
+--- 888,904 ----
+       unsigned char *memory;
+       int length;
+  {
++ 
++   if (libccg_is_extended_regnum (rn)
++       && memory)
++   {
++     /* rn is an extended register, 
++      * not a register of the base processor. */
++     libccg_store_register (rn, memory, length);
++     return -1;
++   }
++ 
++ 
+    sim_cpu *cpu = STATE_CPU (sd, 0); /* FIXME */
+    /* NOTE: gdb (the client) stores registers in target byte order
+       while the simulator uses host byte order */
+***************
+*** 957,962 ****
+--- 972,987 ----
+       unsigned char *memory;
+       int length;
+  {
++ 
++   if (libccg_is_extended_regnum (rn)
++       && memory)
++   {
++     /* rn is an extended register, 
++      * not a register of the base processor. */
++     libccg_fetch_extended_register (rn, memory, length);
++     return -1;
++   }
++ 
+    sim_cpu *cpu = STATE_CPU (sd, 0); /* FIXME */
+    /* NOTE: gdb (the client) stores registers in target byte order
+       while the simulator uses host byte order */
+diff -cr gdb-6.4/sim/brownie32/sim-main.h gdb-6.4/sim/brownie32/sim-main.h
+*** gdb-6.4/sim/brownie32/sim-main.h	2008-11-11 15:47:38.000000000 +0900
+--- gdb-6.4/sim/brownie32/sim-main.h	2008-11-11 16:57:08.000000000 +0900
+***************
+*** 313,318 ****
+--- 313,337 ----
+      else \
+       STATE &= ~simPCOC1; \
+      /* and update the current value: */ \
++     unsigned32 libccg_exec_insn (SIM_DESC sd, unsigned32 addr, signed64  bits); \
++     /* cia : current instruction address */ \
++     /* sd  : simulator descriptor */        \
++     unsigned32 pc = cia;                      \
++     unsigned32 bits = IMEM32(cia); \
++     unsigned32 addr_next = libccg_exec_insn (sd, pc, bits);   \
++     if (pc != addr_next) /* success ?? */                       \
++     {                                                           \
++       /* Update the instruction address */                      \
++       cia = addr_next;                                          \
++       /* process any events */                                  \
++       if (sim_events_tick (sd))                                 \
++       {                                                         \
++         CIA_SET (CPU, cia);                                     \
++         sim_events_process (sd);                                \
++         cia = CIA_GET (CPU);                                    \
++       }                                                         \
++       continue; /* go to the next address */                    \
++     }                                                           \
+    }
+  #endif /* ENGINE_ISSUE_PREFIX_HOOK */
+  

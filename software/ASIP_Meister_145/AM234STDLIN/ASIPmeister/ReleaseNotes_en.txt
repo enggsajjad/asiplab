@@ -1,0 +1,80 @@
+-----------------------------------------------------
+  (C) ASIP Solutions 2011
+      ASIP Meister 2.3.4 Standard
+      October 2011
+-----------------------------------------------------
+
+ASIP Meister Standard Ver.2.3.4 Release Note
+
+                ASIP Solutions, Inc. 
+
+
+ [Release History]
+
+October  2011 -- Ver.2.3.4
+October  2011 -- Ver.2.3.3
+February 2011 -- Ver.2.3.2d
+January  2011 -- Ver.2.3.2c
+June     2010 -- Ver.2.3.2b
+April    2010 -- Ver.2.3.2a
+July     2009 -- Ver.2.3.2
+April    2009 -- Ver.2.3.1
+October  2008 -- Ver.2.3.0
+April    2008 -- Ver.2.2.0
+
+
+ [Modifications in Ver. 2.3.3]
+
+ALL: Add floating license support
+
+ [Modifications in Ver. 2.3.3]
+
+ALL: Change to new software licensing system (Node lock only)
+
+ [Modifications in Ver. 2.3.2d]
+
+DOC: updated English documents
+
+ [Modifications in Ver. 2.3.2c]
+
+GUI: fixed problem under Java 1.6 Update 18 or above
+
+ [Modifications in Ver. 2.3.2b]
+
+SW: updated GDB
+
+ [Modifications in Ver. 2.3.2a]
+
+MISC: add SystemC FHM guide & FPGA sample
+
+ [Modifications in Ver. 2.3.2]
+
+HDL: add SystemC generation support
+
+ [Modifications in Ver. 2.3.1]
+
+SW: add GDB generation
+
+ [Modifications in Ver. 2.3.0]
+
+SW: add compiler generation
+
+[Known bugs list]
+
+1. AP environment generation: An error message appears during the compiler generation
+if extended instructions with no operand are defined as CKF.
+AP environment generation:    
+Do not add any extended instruction which has no operand. 
+
+ [Others/Miscellaneous]
+
+1. Compiler Generator operates slowly. It can take longer than 15 minutes to return 
+to GUI.   
+
+wait till the completion.
+
+2. Command names of applied program development environment of generated processors 
+are fixed to "brownie32-elf-XX"
+
+Do not change the command names beginning with "brownie32-elf-XX"
+

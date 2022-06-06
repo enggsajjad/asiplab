@@ -1,0 +1,924 @@
+/*
+ *  Brownie32 (header file)
+ *
+ *  Copyright (C) 1994,1995  Aaron Sawdey
+ *  Copyright (C) 2005,2006  Upwind Technology, Inc.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *  Email: sawdey@mountains.ee.umn.edu
+ *
+ *  Snail Mail:
+ *
+ *  Department of Electrical Engineering
+ *  University of Minnesota
+ *  4-174 EE/CSci Building
+ *  200 Union Street S.E.
+ *  Minneapolis, MN 55455
+ *
+ */
+
+/* Standard GCC variables that we reference.  */
+
+extern int      target_flags;
+
+/* Globalizing directive for a label.  */
+#define GLOBAL_ASM_OP "\t.globl\t"
+
+#define MASK_EXPLICIT_RELOCS 0x00000010 /* Use relocation operators.  */
+/* True if we should use NewABI-style relocation operators for
+   symbolic addresses.  This is never true for mips16 code,
+   which has its own conventions.  */
+#define TARGET_EXPLICIT_RELOCS  ((target_flags & MASK_EXPLICIT_RELOCS) != 0)
+
+/* Debugging Information */
+#define DBX_DEBUGGING_INFO 1            /* generate stabs (OSF/rose) */
+//#define MIPS_DEBUGGING_INFO 1           /* MIPS specific debugging info */
+//#define DWARF2_DEBUGGING_INFO 1         /* dwarf2 debugging info */
+
+#undef PREFERRED_DEBUGGING_TYPE
+#define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
+/*
+#ifndef PREFERRED_DEBUGGING_TYPE
+#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
+#endif
+*/
+
+#define DWARF2_ADDR_SIZE 4
+
+/* By default, turn on GDB extensions.  */
+#define DEFAULT_GDB_EXTENSIONS 1
+
+
+/*
+ ***************************************************************************
+ *
+ * Comparison stuff.
+ * Modeled off of the RS6000 description.
+ *
+ */
+
+extern struct rtx_def *dlx_compare_op0, *dlx_compare_op1;
+extern enum machine_mode dlx_compare_mode;
+
+/* so local labels are (fairly) unique. */
+/* Changed by Kenichi Nakamura */
+extern char *fn_minus_ext(void);
+
+//#define CPP_PREDEFINES "-DDLX -Ddlx -D__dlx__ -D__DLX__"
+
+#define TARGET_VERSION printf(stderr," (Brownie32 microprocessor)");
+ 
+/*
+ * Prevent gcc from adding -lgcc
+ */
+//#define LIBGCC_SPEC ""
+
+
+#define TARGET_QUICKCALL	((target_flags & MASK_QUICKCALL) != 0)
+
+
+
+
+/* Macro to define tables used to set the flags.
+   This is a list in braces of pairs in braces,
+   each pair being { "NAME", VALUE }
+   where VALUE is the bits to set or minus the bits to clear.
+   An empty string NAME is used to identify the default VALUE.  */
+
+
+#ifndef EXTRA_SWITCHES
+#define EXTRA_SWITCHES
+#endif
+
+#ifndef TARGET_DEFAULT
+#define TARGET_DEFAULT 		MASK_DEFAULT
+#endif
+
+
+//#define LIB_SPEC "%{!mtraps:-lc}%{mtraps:-ltraps}"
+#undef LIB_SPEC
+#define LIB_SPEC "-lc"
+
+/* for normalize to use lt or ltu with peephole2 in optimization.  */
+#define OVERRIDE_OPTIONS  brownie32_override_options ()
+
+
+
+#define BITS_BIG_ENDIAN 0
+#define BYTES_BIG_ENDIAN 1
+#define WORDS_BIG_ENDIAN 1
+#define FLOAT_WORDS_BIG_ENDIAN 1
+
+#define BITS_PER_UNIT 8
+#define BITS_PER_WORD 32
+#define UNITS_PER_WORD 4
+
+//#define MIN_UNITS_PER_WORD 4  1213
+#define MIN_UNITS_PER_WORD 4
+
+#define POINTER_SIZE 32
+
+#define PARM_BOUNDARY 32
+//#define STACK_BOUNDARY 64   C.Katano Nov-23-2006
+#define STACK_BOUNDARY 32
+#define FUNCTION_BOUNDARY 32
+#define BIGGEST_ALIGNMENT 32    /* double */
+#define BIGGEST_FIELD_ALIGNMENT 32
+#define EMPTY_FIELD_BOUNDARY 32
+#define STRUCTURE_SIZE_BOUNDARY 8
+#define STRICT_ALIGNMENT 1
+
+#define TARGET_FLOAT_FORMAT IEEE_FLOAT_FORMAT
+
+#define INT_TYPE_SIZE 32
+#define SHORT_TYPE_SIZE 16
+#define LONG_TYPE_SIZE 32
+
+//#define LONG_LONG_TYPE_SIZE 64  1213
+#define LONG_LONG_TYPE_SIZE 64
+
+#define CHAR_TYPE_SIZE 8
+#define FLOAT_TYPE_SIZE 32
+#define DOUBLE_TYPE_SIZE 64
+#define LONG_DOUBLE_TYPE_SIZE 64
+
+#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE 64
+
+/* This way we can do char operations with regular 
+   register-register ops and not worry about negative
+   chars, so it should be faster. */
+#define DEFAULT_SIGNED_CHAR 0
+
+#define MAX_FIXED_MODE_SIZE 32
+
+/* DLX floating point CC */
+//#define EXTRA_CC_MODES CCFPmode
+//#define EXTRA_CC_NAMES "CCFP"
+
+/* Changed by Kenichi Nakamura */
+#define SELECT_CC_MODE(OP,X,Y) \
+  (GET_MODE_CLASS (GET_MODE (X)) == MODE_FLOAT ? SFmode : SImode)
+/*
+  (GET_MODE_CLASS (GET_MODE (X)) == MODE_FLOAT ? CCFPmode : SImode)
+*/
+
+
+#define STORE_FLAG_VALUE 1
+
+#define DEFAULT_PCC_STRUCT_RETURN 0
+//#define STRUCT_VALUE_REGNUM 1
+
+#define NO_FUNCTION_CSE
+//#define NO_RECURSIVE_FUNCTION_CSE
+
+#define FUNCTION_MODE QImode
+
+#define Pmode SImode
+
+
+#define EXIT_IGNORE_STACK 0
+
+#define CASE_VECTOR_MODE SImode
+
+/* Define results of standard character escape sequences.  */
+/*
+#define TARGET_BELL     007
+#define TARGET_BS       010
+#define TARGET_TAB      011
+#define TARGET_NEWLINE  012
+#define TARGET_VT       013
+#define TARGET_FF       014
+#define TARGET_CR       015
+#define EASY_DIV_EXPR TRUNC_DIV_EXPR
+*/
+
+#define SLOW_BYTE_ACCESS 1
+
+/*
+ *
+ */
+#define TRULY_NOOP_TRUNCATION(OUTPREC, INPREC) 1
+
+/*
+ * We can't load any constants as immediates.
+ */
+#define CONST_DOUBLE_OK_FOR_LETTER_P(VALUE, C) 0
+
+/*
+ * Since all the registers are equivalent, 
+ * a value can be reloaded in any register of the same
+ * class.
+ */
+#define PREFERRED_RELOAD_CLASS(x,class) class
+
+
+/* 
+ * It would be silly to try and profile a 
+ * simulated machine, would it not?
+ */
+#define FUNCTION_PROFILER(file,labelno)
+
+#if 000
+#define ASM_OUTPUT_REG_PUSH(stream,regno)       \
+{ if(regno <= LAST_INT_REG) fprintf(stream,"\tsw\t-4(r29),r%d\n",regno);  \
+  else fprintf(stream,"\tsf\t-4(r29),f%d\n",regno);                       \
+  fputs("\taddi\tr29,r29,#-4\n",stream); }
+
+#define ASM_OUTPUT_REG_POP(stream,regno)        \
+{ if(regno <= LAST_INT_REG) fprintf(stream,"\tlw\tr%d,-4(r29)\n",regno);  \
+  else fprintf(stream,"\tsf\tr%d,-4(r29)\n",regno);                       \
+  fputs("\taddi\tr29,r29,#4\n",stream); }
+#endif /* 000 */
+
+/*
+push -- sw -4(r%d),r%d
+        addi r%d,r%d,#-4
+pop -- lw r%d,-4(r%d)
+       addi r%d,r%d,#4
+*/
+#define ASM_OUTPUT_REG_PUSH(stream,regno)       \
+  { fprintf (stream,"\tsw\t-4(%s),%s\n", reg_names[STACK_POINTER_REGNUM], \
+	     reg_names[regno]);						\
+    fprintf (stream, "\taddi\t%s,%s,#-4\n", reg_names[STACK_POINTER_REGNUM], \
+	     reg_names[STACK_POINTER_REGNUM]); }
+
+#define ASM_OUTPUT_REG_POP(stream, regno)        \
+  { fprintf (stream, "\tlw\t%s,-4(%s)\n", reg_names[regno], \
+             reg_names[STACK_POINTER_REGNUM]);			\
+    fprintf (stream, "\taddi\t%s,%s,#4\n", reg_names[STACK_POINTER_REGNUM], \
+	     reg_names[STACK_POINTER_REGNUM]); }
+
+
+/* memory copy with 32 bit words. */
+#define MOVE_MAX 4
+
+/*
+ * Small int constants have no cost since they
+ * can be used as immediates.
+ * Larger int constants and symbols/labels
+ * cost 2 instruction (addui/lhi).
+ * Doubles cost more, since we have to load the
+ * address (addui/lhi) and then load the constant.
+ */
+
+
+/* Deleted by Kenichi Nakamura
+#define CONST_COSTS(X, CODE, OUTER_CODE)        \
+ case CONST_INT:                                \
+  if(SMALL_INT(X)) return 0;                    \
+  else return COSTS_N_INSNS(2);                 \
+ case CONST:                                    \
+ case SYMBOL_REF:                               \
+ case LABEL_REF:                                \
+  return COSTS_N_INSNS(2);                      \
+ case CONST_DOUBLE:                             \
+  return COSTS_N_INSNS(8);
+*/
+
+/* Changed by Kenichi Nakamura
+#define MEMORY_MOVE_COST(m) ((GET_MODE_SIZE(m) > UNITS_PER_WORD)?8:4)
+*/
+#define MEMORY_MOVE_COST(MODE, CLASS, TO_P) ((GET_MODE_SIZE(MODE) > UNITS_PER_WORD)?8:4)
+
+#define TEXT_SECTION_ASM_OP ".text"
+#define DATA_SECTION_ASM_OP ".data"
+
+/* Given a decl node or constant node, choose the section to output it in
+   and select that section.  */
+/* These are from mips.h, simplified somewhat. */
+/*
+#define SELECT_RTX_SECTION(MODE,RTX)            \
+  data_section()
+
+#define SELECT_SECTION(DECL, RELOC)					\
+{                                                                       \
+  if(RELOC)                                                             \
+    data_section();                                                     \
+  else if(TREE_CODE(DECL) == STRING_CST)				\
+    data_section();							\
+  else if(TREE_CODE(DECL) != VAR_DECL)                                  \
+    text_section();                                                     \
+  else                                                                  \
+    data_section();                                                     \
+}
+*/
+
+#define ASM_APP_ON ";#APP\n"
+#define ASM_APP_OFF ";#NO_APP\n"
+//#define ASM_IDENTIFY_GCC(file) fputs("; Compiled by GCC\n",file)
+#define ASM_COMMENT_START ";;"
+//#define ASM_FILE_START(stream) asm_file_start(stream)
+//#define ASM_FILE_END(stream) asm_file_end(stream)
+#define ASM_LONG ".word"
+#define ASM_SHORT ".half"
+//#define ASM_OPEN_PAREN "("
+//#define ASM_CLOSE_PAREN ")"
+
+/* If defined, a C expression to compute the alignment given to a
+   constant that is being placed in memory.  CONSTANT is the constant
+   and ALIGN is the alignment that the object would ordinarily have.
+   The value of this macro is used instead of that alignment to align
+   the object.
+
+   If this macro is not defined, then ALIGN is used.
+
+   The typical use of this macro is to increase alignment for string
+   constants to be word aligned so that `strcpy' calls that copy
+   constants can be done inline.  */
+/* Stolen from mips.h */
+
+#define CONSTANT_ALIGNMENT(EXP, ALIGN)                                  \
+  ((TREE_CODE (EXP) == STRING_CST  || TREE_CODE (EXP) == CONSTRUCTOR)   \
+   && (ALIGN) < BITS_PER_WORD                                           \
+        ? BITS_PER_WORD                                                 \
+        : (ALIGN))
+
+/* If defined, a C expression to compute the alignment for a static
+   variable.  TYPE is the data type, and ALIGN is the alignment that
+   the object would ordinarily have.  The value of this macro is used
+   instead of that alignment to align the object.
+
+   If this macro is not defined, then ALIGN is used.
+
+   One use of this macro is to increase alignment of medium-size
+   data to make it all fit in fewer cache lines.  Another is to
+   cause character arrays to be word-aligned so that `strcpy' calls
+   that copy constants to character arrays can be done inline.  */
+/* Stolen from mips.h */
+
+#undef DATA_ALIGNMENT
+#define DATA_ALIGNMENT(TYPE, ALIGN)                                     \
+  ((((ALIGN) < BITS_PER_WORD)                                           \
+    && (TREE_CODE (TYPE) == ARRAY_TYPE                                  \
+        || TREE_CODE (TYPE) == UNION_TYPE                               \
+        || TREE_CODE (TYPE) == RECORD_TYPE)) ? BITS_PER_WORD : (ALIGN))
+
+#define ASM_OUTPUT_ALIGN(stream,val) fprintf(stream,"\t.align %d\n",(val))
+/* Deleted by Kenichi Nakamura
+#define ASM_OUTPUT_SKIP(stream,val)  fprintf(stream,"\t.space %d\n",(val))
+*/
+#define ASM_OUTPUT_FLOAT(stream,value) \
+   { long l;                                 \
+      REAL_VALUE_TO_TARGET_SINGLE(value,l); \
+      fprintf(stream,"\t.word 0x%08x\t\n;; %26.7e\n",l,value); }
+#define ASM_OUTPUT_DOUBLE(stream,value) 			\
+   { long l[2];                                 		\
+      REAL_VALUE_TO_TARGET_DOUBLE(value,&l[0]); 		\
+      fprintf(stream,"\t.word 0x%08x,0x%08x\t\n;; %26.16le\n",	\
+	      l[0],l[1],value); }
+#define ASM_OUTPUT_LONG_DOUBLE(stream,value) \
+   { long l[4];                                 \
+      REAL_VALUE_TO_TARGET_DOUBLE(value,&l[0]); \
+      fprintf(stream,"\t.word 0x%08x,0x%08x,0x%08x,0x%08x\t\n;; %26.18lle\n", \
+	      l[0],l[1],l[2],l[3],value); }
+
+#define ASM_OUTPUT_INT(stream,exp) \
+      fprintf(stream,"\t.word "); output_addr_const(stream,exp); \
+      putc('\n',stream) 
+
+#define ASM_OUTPUT_SHORT(stream,exp) \
+      fprintf(stream,"\t.half "); output_addr_const(stream,exp); \
+      putc('\n',stream) 
+
+#define ASM_OUTPUT_CHAR(stream,exp) \
+      fprintf(stream,"\t.byte "); output_addr_const(stream,exp); \
+      putc('\n',stream) 
+
+#define ASM_OUTPUT_BYTE(stream,val) fprintf(stream,"\t.byte 0x%02x\n",val)
+#define ASM_BYTE_OP ".byte"
+
+/*
+ * Need to split up .ascii directives to avoid breaking 
+ * the linker.
+ */
+/* Deleted by Kenichi Nakamura
+#define ASM_OUTPUT_ASCII(stream, ptr, len)			\
+    asm_output_ascii(stream,ptr,len)
+*/
+
+/* Deleted by Amane Otake
+#define ASM_OUTPUT_FUNCTION_PREFIX(stream, fnname)		\
+  fputs(".proc ",stream); assemble_name(stream,fnname);		\
+  fputs("\n",stream);
+*/
+
+#define ASM_OUTPUT_COMMON(stream,name,size,rounded)             \
+{ data_section();                                               \
+  fputs(".global\t",stream); assemble_name(stream,name);        \
+  fputs("\n",stream); assemble_name(stream,name);               \
+  fprintf(stream,":\n\t.space %d\n",rounded); }
+
+/* Deleted by Kenichi Nakamura
+#define ASM_OUTPUT_ALIGNED_COMMON(stream, name, size, alignment) \
+{ data_section();						 \
+  if((alignment)>8) 						 \
+    fprintf(stream,"\t.align %d\n",log_of_two(alignment>>3));    \
+  fputs(".global\t",stream); assemble_name(stream,name);         \
+  fputs("\n",stream);						 \
+  assemble_name(stream,name);                                    \
+  fprintf(stream,":\n\t.space %d\n",size); }
+
+#define ASM_OUTPUT_ALIGNED_LOCAL(stream, name, size, alignment)  \
+{ data_section();                                                \
+  if((alignment)>8)						 \
+    fprintf(stream,"\t.align %d\n",log_of_two(alignment>>3));    \
+  assemble_name(stream,name);                                    \
+  fprintf(stream,":\n\t.space %d\n",size); }
+*/
+#define ASM_OUTPUT_LABEL(stream, label)                 \
+{ assemble_name(stream,label); fputs(":\n",stream); }
+/* Deleted by Kenichi Nakamura
+#define ASM_GLOBALIZE_LABEL(stream,label)               \
+{ fputs(".global ",stream); assemble_name(stream,label); \
+  fputs("\n",stream); }
+*/
+
+#define ASM_OUTPUT_LABELREF(stream,name)                \
+{ fputc('_',stream); fputs(name,stream); }
+
+/* Deleted by Kenichi Nakamura
+#define ASM_OUTPUT_INTERNAL_LABEL(stream,prefix,num)    \
+  fprintf(stream, "%s%d:\n", prefix, num)
+#define ASM_OUTPUT_CASE_LABEL(stream,prefix,num,table)  \
+  { data_section(); fprintf(stream,"\t.align 2\n");     \
+    ASM_OUTPUT_INTERNAL_LABEL(stream,prefix,num); }
+*/
+
+#define ASM_OUTPUT_ADDR_VEC_ELT(stream,value)           \
+  fprintf(stream,"\t.word .L%d\n",value)
+
+#define ASM_FORMAT_PRIVATE_NAME(OUTPUT, NAME, LABELNO)			\
+( (OUTPUT) = (char *) alloca (strlen ((NAME)) + 11),			\
+  sprintf ((OUTPUT), "%s%d", (NAME), (LABELNO)))
+
+/* Deleted by Kenichi Nakamura */
+/*
+#define ASM_GENERATE_INTERNAL_LABEL(string,prefix,num)  \
+  sprintf(string, "*%s%d",prefix, num)
+
+void print_operand(FILE *stream, rtx x, int letter);
+void print_operand_address(FILE *stream, rtx x);
+int print_operand_punct_valid_p(int code);
+*/
+  
+#define PRINT_OPERAND(stream,x,code) print_operand(stream,x,code)
+#define PRINT_OPERAND_ADDRESS(stream,x) print_operand_address(stream,x)
+#define PRINT_OPERAND_PUNCT_VALID_P(code) print_operand_punct_valid_p(code)
+
+
+
+
+/* Register usage
+ *
+ * There are 32 int.
+
+  r0 .. zero reg(*
+  r1 .. status(*
+  r2 .. interrupt (static chain reg.)(*
+  r3 .. link reg(*
+
+  r4~r31 .. int reg
+     r4 .. frame pointer
+     r5 .. stack pointer
+     r6/r7 .. return value reg.
+     r8-r15 .. register passing
+ */
+
+__FIRST_PSEUDO_REGISTER__
+#define FIRST_INT_REG 0
+
+#define GR_REG_NUM 32
+#define LAST_INT_REG (GR_REG_NUM - 1)
+#define GP_REG_LAST  (GR_REG_NUM - 1)
+
+
+/*0 1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+#define FIXED_REGISTERS { \
+ 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     \
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  __FIXED_REGISTERS__ }
+
+#define CALL_USED_REGISTERS { \
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     \
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 __CALL_USED_REGISTERS__ }
+
+__REGISTER_NAMES__
+
+
+
+/* values that can go in particular registers. */
+/* doubles will be the only thing that will take 2 registers. */
+
+#define HARD_REGNO_NREGS(regno,mode) \
+  ((GET_MODE_SIZE(mode) + UNITS_PER_WORD - 1)/UNITS_PER_WORD)
+
+/*
+ * Allocate registers appropriate to data types. doubles 
+ * require even/odd pairs of fp registers. For simplicity,
+ * I also allocate long long ints to even/odd pairs of int registers.
+ */
+#if 0000
+/* Changed by Kenichi Nakamura */
+extern int hard_regno_mode_ok_func(int regno, int mode);
+
+#define HARD_REGNO_MODE_OK(regno,mode) hard_regno_mode_ok_func(regno,mode)
+#endif /* 0000 */
+
+/* Value is 1 if hard register REGNO can hold a value of machine-mode
+   MODE.  */
+
+#if 0000
+#define HARD_REGNO_MODE_OK(REGNO, MODE) \
+ ((((REGNO) & 1) == 0) || (GET_MODE_SIZE (MODE) <= 4))
+#endif /* 0000 */
+#define HARD_REGNO_MODE_OK(REGNO, MODE)  (GET_MODE_SIZE (MODE) <= 4)
+
+
+#define MODES_TIEABLE_P(mode1, mode2)                                   \
+  (FLOAT_MODE_P(mode1) && FLOAT_MODE_P(mode2))
+
+__enum_reg_class__
+
+
+#define N_REG_CLASSES (int) LIM_REG_CLASSES
+
+#define GENERAL_REGS GR_REGS
+
+__REG_CLASS_NAMES__
+
+__REG_CLASS_CONTENTS__
+
+
+__REGNO_REG_CLASS__
+
+#define BASE_REG_CLASS (GR_REGS)
+#define INDEX_REG_CLASS (GR_REGS)
+
+/* Changed by Kenichi Nakamura */
+__REG_CLASS_FROM_LETTER__
+
+
+/* If we use the normal load/store ops in DLX,
+   it will always sign-extend sub-word types. */
+#define LOAD_EXTEND_OP(mode) SIGN_EXTEND
+
+/*
+ * Memory address stuff.
+ */
+#define MAX_REGS_PER_ADDRESS 1
+
+/* Recognize any constant value that is a valid address.
+   need more alternative?
+*/
+ 
+#define CONSTANT_ADDRESS_P(X)   \
+   (GET_CODE (X) == CONST_INT	\
+    && (unsigned HOST_WIDE_INT) (INTVAL (X) + 0x8000) < 0x10000)
+#if 000
+#define CONSTANT_ADDRESS_P(X)   \
+   ((GET_CODE (X) == CONST_INT)        \
+    && (INTVAL (X) <= 32767) \
+    && (INTVAL (X) >= 0))
+#endif /* 000 */
+
+
+#define REGNO_OK_FOR_BASE_P(REGNO)                                          \
+((REGNO) < FIRST_PSEUDO_REGISTER ? ((REGNO) > 0 && (REGNO) <= LAST_INT_REG) \
+ : (reg_renumber[REGNO] > 0 && (reg_renumber[REGNO] <= LAST_INT_REG )))
+
+#ifdef REG_OK_STRICT
+/* Strict version, used in reload pass. This should not
+ * accept pseudo registers.
+ */
+#define REG_OK_FOR_BASE_P(X) REGNO_OK_FOR_BASE_P(REGNO(X))
+#else
+/* Accept an int register or a pseudo reg. */
+#define REG_OK_FOR_BASE_P(X) (REGNO(X) <= LAST_INT_REG || \
+                              REGNO(X) >= FIRST_PSEUDO_REGISTER)
+#endif
+
+/*
+ * DLX doesn't have any indexed addressing
+ * modes, so nothing is ok as an index register.
+ */
+#define REG_OK_FOR_INDEX_P(X) 0
+#define REGNO_OK_FOR_INDEX_P(X) 0
+
+#define LEGITIMATE_ADDRESS_INTEGER_P(X,OFFSET)          \
+ (GET_CODE (X) == CONST_INT && SMALL_INT(X))
+
+#define LEGITIMATE_OFFSET_ADDRESS_P(MODE,X)             \
+ (GET_CODE (X) == PLUS                                  \
+  && GET_CODE (XEXP (X, 0)) == REG                      \
+  && REG_OK_FOR_BASE_P (XEXP (X, 0))                    \
+  && LEGITIMATE_ADDRESS_INTEGER_P (XEXP (X, 1), 0)      \
+  && (((MODE) != DFmode && (MODE) != DImode)            \
+      || LEGITIMATE_ADDRESS_INTEGER_P (XEXP (X, 1), 4)))
+
+#define LEGITIMATE_NONOFFSET_ADDRESS_P(MODE,X)          \
+             (GET_CODE(X) == REG && REG_OK_FOR_BASE_P(X))
+/* 
+ * This is simple because DLX only has one addressing mode:
+ * register + 16 bit signed offset.
+ */
+#define GO_IF_LEGITIMATE_ADDRESS(MODE,X,ADDR)           \
+  if(LEGITIMATE_OFFSET_ADDRESS_P(MODE,X)) goto ADDR;    \
+  if(LEGITIMATE_NONOFFSET_ADDRESS_P(MODE,X)) goto ADDR; 
+/*
+  if(GET_CODE(X) == SYMBOL_REF) goto ADDR;
+*/
+
+
+/* Try machine-dependent ways of modifying an illegitimate address
+   to be legitimate.  If we find one, return the new, valid address.
+   This macro is used in only one place: `memory_address' in explow.c.  */
+
+
+#define LEGITIMIZE_ADDRESS(X,OLDX,MODE,WIN)			\
+do {								\
+  rtx new_x = brownie32_legitimize_address (X, NULL_RTX, MODE);	\
+  if (new_x)							\
+    {								\
+      X = new_x;						\
+      goto WIN;							\
+    }								\
+} while (0)
+
+
+/*
+ * DLX addresses do not depend on the machine mode they are
+ * being used in.
+ */
+#define GO_IF_MODE_DEPENDENT_ADDRESS(addr,label)
+
+/* stolen from sparc.h and modified for DLX which 
+ * has 16 bit immediates. 
+ */
+#define SMALL_INT(X) (INTVAL(X) >= -32768 && INTVAL(X) <= 32767)
+
+__CONST_OK_FOR_LETTER_P__
+
+#define LEGITIMATE_CONSTANT_P(x) (GET_CODE(x) != CONST_DOUBLE)
+
+#define CLASS_UNITS(mode, size)                                         \
+  ((GET_MODE_SIZE (mode) + (size) - 1) / (size))
+
+/* Deleted by Kenichi Nakamura
+#define CLASS_MAX_NREGS(CLASS, MODE)                                    \
+  ((CLASS) == FP_REGS                                                   \
+   ? (CLASS_UNITS (MODE, 4))                                        \
+   : CLASS_UNITS (MODE, UNITS_PER_WORD))
+*/
+
+#define CLASS_MAX_NREGS(CLASS, MODE) CLASS_UNITS (MODE, UNITS_PER_WORD)
+
+#define STACK_GROWS_DOWNWARD 1
+
+#define FRAME_GROWS_DOWNWARD 1
+/* Modified by Kenichi Nakamura */
+//#define STARTING_FRAME_OFFSET -8
+#define STARTING_FRAME_OFFSET 0
+
+#define STACK_POINTER_OFFSET 0
+
+#define INITIAL_FRAME_POINTER_OFFSET(var) { var=8; }
+
+/* Lifted from mips.h.
+ * If defined, a C expression that gives the alignment boundary, in
+ * bits, of an argument with the specified mode and type.  If it is
+ * not defined,  `PARM_BOUNDARY' is used for all arguments.  
+ */
+
+#define FUNCTION_ARG_BOUNDARY(MODE, TYPE) PARM_BOUNDARY
+
+#define FIRST_PARM_OFFSET(FNDECL) 8
+//#define STACK_POINTER_REGNUM 29
+//#define FRAME_POINTER_REGNUM 30
+//#define ARG_POINTER_REGNUM 30   /* access args with frame pointer */
+/* Modified by Kenichi Nakamura */
+#define STACK_POINTER_REGNUM B32_SP_REGNUM
+#define FRAME_POINTER_REGNUM B32_FP_REGNUM
+#define ARG_POINTER_REGNUM B32_FP_REGNUM
+   /* access args with frame pointer */
+
+/* this is required by h/w arch.  */
+#define STATIC_CHAIN_REGNUM 2
+
+#define FRAME_POINTER_REQUIRED 1
+
+#define FUNCTION_ARG(CUM, MODE, TYPE, NAMED) \
+         brownie32_function_arg (&CUM, MODE, TYPE, NAMED)
+
+
+#if 000
+// #if 0  // Changed by C.Katano Nov-24-2006
+/* 
+ * Return char/short/int in r1
+ * return float in f0
+ * return double in f0/f1.
+ * return anything else in r1.
+ */
+#define FUNCTION_VALUE(VALTYPE, FUNC)                                   \
+((TYPE_MODE(VALTYPE) == DFmode || TYPE_MODE(VALTYPE) == SFmode)?	\
+                    gen_rtx_REG(TYPE_MODE(VALTYPE),FIRST_FP_REG)        \
+:((TYPE_MODE(VALTYPE)==HImode || TYPE_MODE(VALTYPE) == QImode)?		\
+                    gen_rtx_REG(TYPE_MODE(VALTYPE), 1)			\
+:gen_rtx_REG(SImode,1)))
+// #else
+#define FUNCTION_VALUE(VALTYPE, FUNC)                                   \
+((TYPE_MODE(VALTYPE) == DFmode || TYPE_MODE(VALTYPE) == SFmode)?	\
+                    gen_rtx_REG(TYPE_MODE(VALTYPE),FIRST_FP_REG)        \
+:((TYPE_MODE(VALTYPE)==HImode || TYPE_MODE(VALTYPE) == QImode)?		\
+                    gen_rtx_REG(TYPE_MODE(VALTYPE), 4)			\
+:gen_rtx_REG(TYPE_MODE(VALTYPE), 4)))
+
+// #endif
+#endif /* 000 */
+
+/* return in r6.  */
+#define FUNCTION_VALUE(VALTYPE, FUNC)  \
+   gen_rtx_REG (TYPE_MODE (VALTYPE), B32_RV_REGNUM)
+
+
+/* return in r1 or f0. */
+/* I'm not quite sure if I'll need any of these routines anyway. */
+#if 0    // Changed by C.katano Nov-24-2006
+#define LIBCALL_VALUE(MODE)     \
+ (FLOAT_MODE_P(MODE)?gen_rtx_REG(SFmode,FIRST_FP_REG):gen_rtx_REG(SImode,1))
+#else
+//#define LIBCALL_VALUE(MODE)     
+// (FLOAT_MODE_P(MODE)?gen_rtx_REG(SFmode,FIRST_FP_REG):gen_rtx_REG(SImode,4))
+#define LIBCALL_VALUE(MODE)  gen_rtx_REG (MODE, B32_RV_REGNUM)
+
+#endif
+
+/* Changed by Kenichi Nakamura */
+
+/* Define a data type for recording info about an argument list
+   during the scan of that argument list.  This data type should
+   hold all necessary information about the function itself
+   and about the args processed so far, enough to enable macros
+   such as FUNCTION_ARG to determine where the next arg should go.  */
+
+#define CUMULATIVE_ARGS struct cum_arg
+struct cum_arg { int nbytes; int anonymous_args; };
+
+
+#define INIT_CUMULATIVE_ARGS(CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS) \
+		((CUM).nbytes = 0, (CUM).anonymous_args = 0)
+
+//  init_cumulative_args(&CUM, FNTYPE, LIBNAME)
+/*
+#define INIT_CUMULATIVE_ARGS(cum,fntype,libname) { cum = 0; }
+*/
+/*
+
+#define FUNCTION_ARG_ADVANCE(cum,mode,type,named)       \
+{ cum += UNITS_PER_WORD*((GET_MODE_SIZE(mode)+UNITS_PER_WORD-1)         \
+             /UNITS_PER_WORD) ; }
+*/
+#define FUNCTION_ARG_ADVANCE(CUM, MODE, TYPE, NAMED)	\
+ ((CUM).nbytes += ((MODE) != BLKmode			\
+  ? (GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) & -UNITS_PER_WORD	\
+  : (int_size_in_bytes (TYPE) + UNITS_PER_WORD - 1) & -UNITS_PER_WORD))
+
+
+/* When a parameter is passed in a register, stack space is still
+   allocated for it.  */
+#define REG_PARM_STACK_SPACE(DECL)	\
+		(UNITS_PER_WORD * (GP_ARG_LAST - GP_ARG_FIRST + 1))
+
+/* Define this if the above stack space is to be considered part of the
+   space allocated by the caller.  */
+#define OUTGOING_REG_PARM_STACK_SPACE
+
+
+/* Keep the stack pointer constant throughout the function.  */
+#define ACCUMULATE_OUTGOING_ARGS 1
+
+/*
+ * As is usual in C, the caller pops all the arguments.
+ */
+
+#define RETURN_POPS_ARGS(FUNDECL, FUNTYPE, STACKSIZE) 0
+
+//#define FUNCTION_ARG_PARTIAL_NREGS(cum,mode,type,named) 0
+
+
+/*
+ * All registers are passed on the stack.
+ */
+/* Symbolic macros for the first/last argument registers.  */
+
+#define GP_ARG_FIRST   B32_RP_FROM_REGNUM
+#define GP_ARG_LAST    B32_RP_TO_REGNUM
+//#define FP_ARG_FIRST 0
+//#define FP_ARG_LAST  0
+
+/* 1 if N is a possible register number for function argument passing.
+   We have no FP argument registers when soft-float.  When FP registers
+   are 32 bits, we can't directly reference the odd numbered ones.  */
+
+#define FUNCTION_ARG_REGNO_P(N)					\
+ (TARGET_QUICKCALL						\
+  ? (IN_RANGE((N), GP_ARG_FIRST, GP_ARG_LAST)     		\
+    && !fixed_regs[N])						\
+  : 0)
+
+
+/* return in r6 or r7.  */
+#define FUNCTION_VALUE_REGNO_P(REGNO)   ((REGNO) == B32_RV_REGNUM)
+
+/*
+ * Trampoline stuff, stolen from mips.h.
+ * This will need serious work.
+ *
+ */
+
+/* A C statement to output, on the stream FILE, assembler code for a
+   block of data that contains the constant parts of a trampoline. 
+   This code should not include a label--the label is taken care of
+   automatically.  */
+
+#define TRAMPOLINE_TEMPLATE(STREAM)                                      \
+{                                                                        \
+}
+
+/* A C expression for the size in bytes of the trampoline, as an
+   integer.  */
+
+#define TRAMPOLINE_SIZE (9*4)
+
+/* Alignment required for trampolines, in bits.
+
+   If you don't define this macro, the value of `BIGGEST_ALIGNMENT'
+   is used for aligning trampolines.  */
+
+/* #define TRAMPOLINE_ALIGNMENT 32 */
+
+/* A C statement to initialize the variable parts of a trampoline. 
+   ADDR is an RTX for the address of the trampoline; FNADDR is an
+   RTX for the address of the nested function; STATIC_CHAIN is an
+   RTX for the static chain value that should be passed to the
+   function when it is called.  */
+#define INITIALIZE_TRAMPOLINE(ADDR, FUNC, CHAIN)                            \
+{                                                                           \
+  rtx addr = ADDR;                                                          \
+  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 20)), FUNC);   \
+  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 24)), CHAIN);  \
+                                                                            \
+  /* Flush the instruction cache.  */                                       \
+}
+/*
+  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 28)), FUNC);   \
+  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 32)), CHAIN);  \
+*/
+/*
+  emit_library_call (gen_rtx (SYMBOL_REF, Pmode, "__gcc_flush_cache"), \
+                     0, VOIDmode, 1, addr, Pmode);                          \
+*/
+
+#define TRANSFER_FROM_TRAMPOLINE                                        \
+                                                                        \
+void                                                                    \
+__gcc_flush_cache (addr)                                                \
+     char *addr;                                                        \
+{                                                                       \
+  if (cacheflush (addr, TRAMPOLINE_SIZE, 1) < 0)                        \
+    perror ("cacheflush of trampoline code");                           \
+}
+
+/* Target CPU builtins.  */
+#define TARGET_CPU_CPP_BUILTINS()				\
+  do								\
+    {								\
+      builtin_define ("__brownie32__");                     \
+      builtin_assert ("machine=brownie32");                     \
+      builtin_assert ("cpu=brownie32");				\
+        /* Macros dependent on the C dialect.  */		\
+      if (preprocessing_asm_p ())				\
+	{							\
+          builtin_define_std ("LANGUAGE_ASSEMBLY");		\
+	  builtin_define ("_LANGUAGE_ASSEMBLY");		\
+	}							\
+      else							\
+	{							\
+          builtin_define_std ("LANGUAGE_C");			\
+	  builtin_define ("_LANGUAGE_C");			\
+	}							\
+								\
+} while (0)
+
+__FUNC_PROTOTYPES__

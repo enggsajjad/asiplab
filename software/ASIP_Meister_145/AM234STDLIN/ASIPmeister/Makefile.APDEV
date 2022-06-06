@@ -1,0 +1,61 @@
+
+# Copyright (C) 2009 ASIP Solutions, Inc. All rights reserved.
+
+### varible definition
+
+# if non-definition of ASIPmeister_HOME, set
+ASIPmeister_HOME ?= /usr/local/ASIPmeister
+
+# directory name
+BINUTILS = binutils-2.16.1
+GCC = gcc-4.2.2
+GDB = gdb-6.4
+NEWLIB = newlib-1.14.0
+
+# directory path
+# ASIP_APDEV_SRCROOT has been already defined by user
+BINUTILSDIR = $(ASIP_APDEV_SRCROOT)/$(BINUTILS)
+GCCDIR = $(ASIP_APDEV_SRCROOT)/$(GCC)
+GDBDIR = $(ASIP_APDEV_SRCROOT)/$(GDB)
+NEWLIBDIR = $(ASIP_APDEV_SRCROOT)/$(NEWLIB)
+
+# patch path
+PATCHDIR = $(ASIPmeister_HOME)/share/patch
+BINUTILSPATCH1 = $(PATCHDIR)/binutils-2.16.1-brownie32std-20080711.patch
+BINUTILSPATCH2 = $(PATCHDIR)/binutils-2.16.1-ccg-brownie32std-20081222.patch
+GDBPATCH1 = $(PATCHDIR)/gdb-6.4-brownie32std-20080711.patch
+GDBPATCH2 = $(PATCHDIR)/gdb-6.4-ccg-brownie32std-20081222.patch
+GCCPATCH = $(PATCHDIR)/gcc-4.2.2-brownie32std-20080225.patch
+NEWLIBPATCH1 = $(PATCHDIR)/newlib-1.14.0-brownie32std-20080225.patch
+NEWLIBPATCH2 = $(PATCHDIR)/newlib-1.14.0-missing-makeinfo.patch
+
+# configure and make 
+MAKE = make
+
+# make install archc and copy xerces library file
+INSTALL = make install
+ASIPMEISTERLIB = $(ASIPmeister_HOME)/lib
+
+# others
+TAR = .tar.gz
+BZ2 = .tar.bz2
+
+
+
+### make
+default:
+# extraction
+	tar xjf $(BINUTILS)$(BZ2) -C $(ASIP_APDEV_SRCROOT)
+	tar xzf $(GDB)$(TAR) -C $(ASIP_APDEV_SRCROOT)
+	tar xjf $(GCC)$(BZ2) -C $(ASIP_APDEV_SRCROOT)
+	tar xzf $(NEWLIB)$(TAR) -C $(ASIP_APDEV_SRCROOT)
+
+# patch
+	patch -p0 -d $(BINUTILSDIR) < $(BINUTILSPATCH1)
+	patch -p1 -d $(BINUTILSDIR) < $(BINUTILSPATCH2)
+	patch -p0 -d $(GDBDIR) < $(GDBPATCH1)
+	patch -p1 -d $(GDBDIR) < $(GDBPATCH2)
+	patch -p0 -d $(GCCDIR) < $(GCCPATCH)
+	patch -p0 -d $(NEWLIBDIR) < $(NEWLIBPATCH1)
+	patch -p1 -d $(NEWLIBDIR) < $(NEWLIBPATCH2)
+

@@ -1,0 +1,20 @@
+#! /usr/bin/perl
+$^I = "";
+while (<>) {
+	s|<nickname>.*</nickname>|<nickname>brownie32</nickname>|;
+	s|<insn void_intrinsic="no">|<insn void_intrinsic="false">|;
+	s|<insn void_intrinsic="yes">|<insn void_intrinsic="true">|;
+	s|<behavior>.*</behavior>||;
+
+	s|</register_bank>|</register_bank>
+<immediate_class type="signed"   length="16" letter="I" />
+<immediate_class type="const"    length="0"  letter="J" />
+<immediate_class type="const"    length="16" letter="K" />
+<immediate_class type="unsigned" length="16" letter="L" />|;
+
+	s|<register_type length="32">GR|<register_type length="32">GENERAL_type|;
+	s|<register_bank type="GR" size="32" prefix="r">|<register_bank base="true" type="GENERAL_type" size="32" prefix="r" letter="d">|;
+
+	print $_;
+}
+exit 0;

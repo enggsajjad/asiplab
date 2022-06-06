@@ -1,0 +1,5 @@
+PATH=/usr/java/jre1.6.0_05/bin:$PATH
+PATH=/usr/local/ASIPmeister/bin/:$PATH
+ASIP_APDEV_SRCROOT=/home/xxx/ASIP_APs
+export PATH
+export ASIP_APDEV_SRCROOT

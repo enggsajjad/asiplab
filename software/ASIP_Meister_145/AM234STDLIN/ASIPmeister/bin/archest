@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Copyright (C) 2008 ASIP Solutions, Inc. All rights reserved.
+
+# search ASIP_MEISTER_HOME by itself
+
+if [ "${0#/}" != "$0" ]; then
+	# starts with "/"
+	ASIP_MEISTER_HOME="$0"
+elif [ "${0#./}" != "$0" ]; then
+	# starts with "./"
+	ASIP_MEISTER_HOME=`pwd`"${0#.}"
+elif [ "${0#../}" != "$0" ]; then
+	# starts with "../"
+	ASIP_MEISTER_HOME=`dirname "$(pwd)"`"${0#..}"
+else
+	# $0 is a command name
+	ASIP_MEISTER_HOME=`which $0`
+fi
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+
+st=0
+trap "/bin/rm -f formula.dat formula.log tmp.txt fhm.log ; exit \$st" 0 1 2 3 15
+
+cd meister
+/bin/rm -f $2 archest_err.log
+cp ${ASIP_MEISTER_HOME}/etc/formula.dat .
+${ASIP_MEISTER_HOME}/bin/estimate -c $1 -o $2 > archest_err.log
+st=$?

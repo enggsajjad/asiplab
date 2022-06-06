@@ -1,0 +1,3031 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Modified by T.Hamabe on 2006/12/05 -->
+<!-- Modified by T.Hamabe on 2006/11/30 -->
+<FHM>
+  <model_name> rotator </model_name>
+
+  <model>
+    <design_level> behavior </design_level>
+    <version> 1.0 </version>
+    <author> <![CDATA[ Yamane Yukinori ]]> </author>
+    <affiliation> <![CDATA[ Osaka Univ. ]]> </affiliation>
+    <model_info> <![CDATA[
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                %
+%    Copyright 2008 ASIP Solutions, Inc. All rights reserved.    %
+%              Copyright 2002-2005 PEAS Project                  %
+%                                                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+]]> </model_info>
+
+    <parameter>
+      <parameter_value key="bit_width">
+        <value> 4 </value>
+        <value> 8 </value>
+        <value> 16 </value>
+        <value> 32 </value>
+        <value> 64 </value>
+        <value> 128 </value>
+      </parameter_value>
+    </parameter>
+
+    <function_description>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator function definition
+
+if ($#ARGV != 0){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width = $ARGV[0];
+$bit_width_1 = $bit_width - 1;
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+
+{
+print <<FHM_DL_FUNCTION
+unsigned shift(unsigned data_in, unsigned ctrl, unsigned mode);
+
+/** ${bit_width}-bit rotator */
+model rotator_${bit_width}{
+  port{
+    in  data_in[${bit_width_1}:0], mode, ctrl[${ctrl_width_1}:0];
+    out data_out[${bit_width_1}:0];
+  }
+
+  /** shift left */
+  function sl{
+    input{
+      unsigned data_in, ctrl;
+    }
+    output{
+      unsigned data_out = shift(data_in, ctrl, mode);
+    }
+    control{
+      unsigned mode;
+    }
+    protocol{
+      [mode == '0']{
+	valid data_out;
+      }
+    }
+  }
+
+  /** shift right */
+  function sr{
+    input{
+      unsigned data_in, ctrl;
+    }
+    output{
+      unsigned data_out = shift(data_in, ctrl, mode);
+    }
+    control{
+      unsigned mode;
+    }
+    protocol{
+      [mode == '1']{
+	valid data_out;
+      }
+    }
+  }
+}
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_description>
+
+    <function_conv>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator function definition
+
+if ($#ARGV != 0){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width = $ARGV[0];
+$bit_width_1 = $bit_width - 1;
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+
+{
+print <<FHM_DL_FUNCTION
+/** shift left */
+function sl {
+  input {
+    bit [$bit_width_1:0] data_in;
+    bit [$ctrl_width_1:0]  ctrl;
+  }
+  output {
+    bit [$bit_width_1:0] data_out;
+  }
+  control {
+    in bit mode;
+  }
+  protocol {
+    single_cycle_protocol {
+      mode = '0';
+    }
+  }
+}
+
+/** shift right */
+function sr {
+  input {
+    bit [$bit_width_1:0] data_in;
+    bit [$ctrl_width_1:0]  ctrl;
+  }
+  output {
+    bit [$bit_width_1:0] data_out;
+  }
+  control {
+    in bit mode;
+  }
+  protocol {
+    single_cycle_protocol {
+      mode = '1';
+    }
+  }
+}
+
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_conv>
+
+    <function_port>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator port infomation in behavior level
+# parameter : bit_width
+
+if ($#ARGV != 0){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width = $ARGV[0];
+$bit_width_1 = $bit_width - 1;
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+{
+print <<FHM_DL_PORTINFO
+data_in	in	bit_vector   $bit_width_1   0	data
+mode	in	bit		ctrl
+ctrl	in	bit_vector   $ctrl_width_1   0	data
+data_out	out	bit_vector   $bit_width_1   0	data
+FHM_DL_PORTINFO
+}
+exit (0);
+        ]]>
+      </script>
+    </function_port>
+
+    <design>
+      <design_lang> vhdl </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in behavior level
+# parameter : instance_name bit_width
+
+if ($#ARGV != 1){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+
+$instance_name    = $ARGV[0];
+$bit_width        = $ARGV[1];
+$bit_width_1      = $bit_width - 1;
+$bit_width_x2     = 2 * $bit_width;
+$bit_width_x2_1   = $bit_width_x2 - 1;
+
+$ctrl_width       = log($bit_width)/log(2);
+$ctrl_width_1     = $ctrl_width - 1;
+{
+print <<FHM_DL_INSTANCE
+-- Module     : ${bit_width}-bit Barrel Shifter
+-- Feature    : Right or Left Rotater
+-- References : Started from scratch.
+--            : Pentium architecture.
+-- Author     : Designed by T.Morifuji (c)1996,1997.
+
+-- Version : 1.0  : 
+-- Version : 1.1  : Modified by Y.Yamane 2001/12/26
+-- Version : 1.2  : Modified by Y.Yamane 2001/01/15
+
+-- Comment :
+--  mode
+--  0 : Left Rotate
+--  1 : Right Rotate
+
+library IEEE;
+  use IEEE.std_logic_1164.all;
+  use IEEE.std_logic_arith.all;
+  use IEEE.std_logic_unsigned.all;
+
+entity $instance_name is
+  port (data_in  : in std_logic_vector($bit_width_1 downto 0);
+        mode     : in std_logic;
+        ctrl     : in std_logic_vector($ctrl_width_1 downto 0);
+        data_out : out std_logic_vector($bit_width_1 downto 0));
+end $instance_name;
+
+architecture behavior of $instance_name is
+begin
+
+  process(data_in, mode, ctrl)
+
+    variable tmp : std_logic_vector($bit_width_x2_1 downto 0);
+    variable offsetH, offsetL : integer range 0 to $bit_width_x2_1;
+    variable amount : integer range 0 to $bit_width_x2_1;
+
+  begin
+
+    tmp := data_in & data_in;
+    amount := conv_integer(unsigned(ctrl));
+
+    if mode = '0' then  -- Left Rotate
+      offsetH := $bit_width_x2_1 - amount;
+      offsetL := $bit_width - amount;
+    else
+      offsetH := $bit_width_1 + amount;
+      offsetL := amount;
+    end if;
+
+    data_out <= tmp(offsetH downto offsetL);
+
+  end process;
+
+end behavior;
+FHM_DL_INSTANCE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity></entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+
+      <synthesis></synthesis>
+    </design>
+
+    <design>
+      <design_lang> Verilog </design_lang>
+                                                                                
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in behavior level
+# parameter : instance_name bit_width
+
+if ($#ARGV != 1){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+
+$instance_name    = $ARGV[0];
+$bit_width        = $ARGV[1];
+$bit_width_1      = $bit_width - 1;
+$bit_width_x2     = 2 * $bit_width;
+$bit_width_x2_1   = $bit_width_x2 - 1;
+
+$ctrl_width       = log($bit_width)/log(2);
+$ctrl_width_1     = $ctrl_width - 1;
+{
+print <<FHM_DL_INSTANCE
+// Module     : ${bit_width}-bit Barrel Shifter
+// Feature    : Right or Left Rotater
+// References : Started from scratch.
+//            : Pentium architecture.
+// Author     : Designed by T.Morifuji (c)1996,1997.
+\n
+// Version : 1.0  : 
+// Version : 1.1  : Modified by Y.Yamane 2001/12/26
+// Version : 1.2  : Modified by Y.Yamane 2001/01/15
+\n
+// Comment :
+//  mode
+//  0 : Left Rotate
+//  1 : Right Rotate
+\n
+module $instance_name (
+  data_in  ,
+  mode     ,
+  ctrl     ,
+  data_out );
+\n
+input  [$bit_width_1:0] data_in  ;
+input        mode      ;
+input  [ $ctrl_width_1:0] ctrl     ;
+output [$bit_width_1:0] data_out ;
+\n
+wire  [$bit_width_1:0] data_in  ;
+wire        mode      ;
+wire  [ $ctrl_width_1:0] ctrl     ;
+reg   [$bit_width_1:0] data_out ;
+\n
+reg   [$bit_width_x2_1:0] tmp ;
+integer i ;
+integer amount ;
+\n
+always@ (data_in or mode or ctrl)
+begin
+    tmp = {data_in , data_in};
+    amount = ctrl;
+\n
+    if (mode == 1'b0) // Left Rotate
+      amount = $bit_width - amount;
+    for (i = 0 ; i <= $bit_width_1 ; i = i + 1)
+    begin
+      data_out[i] = tmp[amount];
+      amount = amount + 1;
+    end
+end
+\n
+endmodule
+FHM_DL_INSTANCE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+                                                                                
+      <entity></entity>
+                                                                                
+      <testvector></testvector>
+                                                                                
+      <synthesis></synthesis>
+    </design>
+
+    <design>
+      <design_lang> SystemC Header </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in behavior level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+$bit_width_1   = $bit_width - 1;
+$bit_width_2   = $bit_width - 2;
+
+$ctrl_width    = log($bit_width)/log(2);
+if ($ctrl_width == int($ctrl_width)){
+    $ctrl_width = int($ctrl_width);
+}
+else{
+    $ctrl_width = int($ctrl_width) + 1;
+}
+$ctrl_width_1  = $ctrl_width - 1;
+
+if ($bit_width <= 64) {
+    $input_type = "sc_dt::sc_uint<$bit_width>";
+} else {
+    $input_type = "sc_dt::sc_biguint<$bit_width>";
+}
+
+if ($ctrl_width <= 64) {
+    $ctrl_type = "sc_dt::sc_uint<$ctrl_width>";
+} else {
+    $ctrl_type = "sc_dt::sc_biguint<$ctrl_type>";
+}
+
+$macro = "__" . uc($name_space) . "_" . uc($instance_name) . "_H__";
+
+{
+print <<FHM_DL_INSTANCE_HEAD1
+#ifndef $macro
+#define $macro 1
+
+// Module     : ${bit_width}-bit Barrel Shifter
+// Feature    : Right or Left Rotater
+// References : Started from scratch.
+//            : Pentium architecture.
+// Author     : Designed by T.Morifuji (c)1996,1997.
+
+// Version : 1.0  : 
+// Version : 1.1  : Modified by Y.Yamane 2001/12/26
+// Version : 1.2  : Modified by Y.Yamane 2001/01/15
+
+// Comment :
+//  mode
+//  0 : Left Rotate
+//  1 : Right Rotate
+FHM_DL_INSTANCE_HEAD1
+}
+
+{
+print <<FHM_DL_INSTANCE_HEAD2
+
+#include <systemc>
+
+namespace $name_space {
+  SC_MODULE($instance_name) {
+    sc_core::sc_in< $input_type > data_in;
+    sc_core::sc_in< bool > mode;
+    sc_core::sc_in< $ctrl_type > ctrl;
+    sc_core::sc_out< $input_type > data_out;
+  
+    SC_CTOR($instance_name) :
+      data_in("data_in"),
+      mode("mode"),
+      ctrl("ctrl"),
+      data_out("data_out")
+    {
+      SC_METHOD(process);
+      sensitive << data_in << mode << ctrl;
+    }
+  
+    void process();
+  };
+};
+
+#endif // $macro
+FHM_DL_INSTANCE_HEAD2
+};
+
+exit (0);
+]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <design>
+      <design_lang> SystemC Program </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in behavior level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+$bit_width_1   = $bit_width - 1;
+$bit_width_2   = $bit_width - 2;
+$bit_width_d   = $bit_width * 2;
+$bit_width_d_1 = $bit_width * 2 - 1;
+
+$ctrl_width    = log($bit_width)/log(2);
+if ($ctrl_width == int($ctrl_width)){
+    $ctrl_width = int($ctrl_width);
+}
+else{
+    $ctrl_width = int($ctrl_width) + 1;
+}
+$ctrl_width_1  = $ctrl_width - 1;
+
+if ( $bit_width <= 64 ) {
+  $data_type = "sc_dt::sc_uint<$bit_width>";
+} else {
+  $data_type = "sc_dt::sc_biguint<$bit_width>";
+}
+
+{
+print <<FHM_DL_INSTANCE_HEAD1
+#include "${instance_name}.h"
+
+// Module     : ${bit_width}-bit Barrel Shifter
+// Feature    : Right or Left Rotater
+// References : Started from scratch.
+//            : Pentium architecture.
+// Author     : Designed by T.Morifuji (c)1996,1997.
+
+// Version : 1.0  : 
+// Version : 1.1  : Modified by Y.Yamane 2001/12/26
+// Version : 1.2  : Modified by Y.Yamane 2001/01/15
+
+// Comment :
+//  mode
+//  0 : Left Rotate
+//  1 : Right Rotate
+FHM_DL_INSTANCE_HEAD1
+}
+
+{
+print <<FHM_DL_INSTANCE_HEAD2
+
+#include <systemc>
+
+void ${name_space}::${instance_name}::process() 
+{
+FHM_DL_INSTANCE_HEAD2
+}
+
+print <<FHM_DL_V_INSTANCE;
+  sc_dt::sc_biguint<$bit_width_d> tmp;
+  int offsetH, offsetL;
+  int amount;
+
+  tmp = (data_in.read(), data_in.read());
+  amount = ctrl.read();
+
+  if(mode.read() == 0){  // Left Rotate
+    offsetH = $bit_width_d_1 - amount;
+    offsetL = $bit_width - amount;
+  }else{
+    offsetH = $bit_width_1 + amount;
+    offsetL = amount;
+  }
+
+  data_out.write( $data_type(tmp.range(offsetH, offsetL)) );
+FHM_DL_V_INSTANCE
+print "}\n";
+
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <estimation>
+      <estimation_data>
+        <library name="OSAKA">
+
+          <est_type name="shape">
+            <est_index name="area">
+              <unit> mm2 </unit>
+              <translate>
+                <translate_value key="gate"> 4201.68 </translate_value>
+                <translate_value key="mm2">  1 </translate_value>
+              </translate>
+
+              <parameters name="">
+                <max>
+                  <data bit_width="4"> 0.0242215825574532 </data>
+                  <data bit_width="8"> 0.119637610432018 </data>
+                  <data bit_width="16"> 0.22808737433598 </data>
+                  <data bit_width="32"> 0.62145331129453 </data>
+                  <data bit_width="64"> 1.80864456669713 </data>
+                  <data bit_width="128"> 4.40703183012509 </data>
+                </max>
+                <min>
+                  <data bit_width="4"> 0.0127027617524419 </data>
+                  <data bit_width="8"> 0.0403362745378039 </data>
+                  <data bit_width="16"> 0.110431785143086 </data>
+                  <data bit_width="32"> 0.278546389301422 </data>
+                  <data bit_width="64"> 0.746177765798442 </data>
+                  <data bit_width="128"> 1.94295619276099 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4"> 0.0127027617524419 </data>
+                    <data bit_width="8"> 0.0403362745378039 </data>
+                    <data bit_width="16"> 0.110431785143086 </data>
+                    <data bit_width="32"> 0.278546389301422 </data>
+                    <data bit_width="64"> 0.746177765798442 </data>
+                    <data bit_width="128"> 1.94295619276099 </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4"> 0.0242215825574532 </data>
+                    <data bit_width="8"> 0.119637610432018 </data>
+                    <data bit_width="16"> 0.22808737433598 </data>
+                    <data bit_width="32"> 0.62145331129453 </data>
+                    <data bit_width="64"> 1.80864456669713 </data>
+                    <data bit_width="128"> 4.40703183012509 </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4"> 0.0137477342396375 </data>
+                    <data bit_width="8"> 0.0466246927419508 </data>
+                    <data bit_width="16"> 0.12745300070448 </data>
+                    <data bit_width="32"> 0.318162762276042 </data>
+                    <data bit_width="64"> 0.830449709639953 </data>
+                    <data bit_width="128"> 2.41451642938063 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+
+            <est_index name="aspect_ratio">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="height">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="width">
+              <!-- Dummy yet -->
+            </est_index>
+          </est_type>
+
+          <est_type name="timing">
+            <est_index name="delay">
+              <unit> ns </unit>
+
+              <parameters name="">
+                <max>
+                  <data bit_width="4"> 1.71 </data>
+                  <data bit_width="8"> 2.92 </data>
+                  <data bit_width="16"> 4.57 </data>
+                  <data bit_width="32"> 6.22 </data>
+                  <data bit_width="64"> 7.05 </data>
+                  <data bit_width="128"> 10.92 </data>
+                </max>
+                <min>
+                  <data bit_width="4"> 1.00 </data>
+                  <data bit_width="8"> 1.50 </data>
+                  <data bit_width="16"> 2.18 </data>
+                  <data bit_width="32"> 2.91 </data>
+                  <data bit_width="64"> 3.40 </data>
+                  <data bit_width="128"> 4.36 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4"> 1.71 </data>
+                    <data bit_width="8"> 2.34 </data>
+                    <data bit_width="16"> 3.21 </data>
+                    <data bit_width="32"> 4.12 </data>
+                    <data bit_width="64"> 5.50 </data>
+                    <data bit_width="128"> 8.93 </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4"> 1.00 </data>
+                    <data bit_width="8"> 1.50 </data>
+                    <data bit_width="16"> 2.18 </data>
+                    <data bit_width="32"> 2.91 </data>
+                    <data bit_width="64"> 3.40 </data>
+                    <data bit_width="128"> 4.36 </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4"> 1.51 </data>
+                    <data bit_width="8"> 2.92 </data>
+                    <data bit_width="16"> 4.57 </data>
+                    <data bit_width="32"> 6.22 </data>
+                    <data bit_width="64"> 7.05 </data>
+                    <data bit_width="128"> 10.92 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+
+            <est_index name="delay_fullpath">
+            <!-- Dummy yet -->
+            </est_index>
+          </est_type>
+
+          <est_type name="power">
+            <est_index name="static_power">
+              <unit> mW </unit>
+              <parameters name="">
+                <max>
+                  <data bit_width="4"> 13.7772 </data>
+                  <data bit_width="8"> 63.2427 </data>
+                  <data bit_width="16"> 109.4512 </data>
+                  <data bit_width="32"> 272.6947 </data>
+                  <data bit_width="64"> 773.9810 </data>
+                  <data bit_width="128"> 1872.9 </data>
+                </max>
+                <min>
+                  <data bit_width="4"> 4.8916 </data>
+                  <data bit_width="8"> 15.9570 </data>
+                  <data bit_width="16"> 43.8677 </data>
+                  <data bit_width="32"> 118.2690 </data>
+                  <data bit_width="64"> 314.2848 </data>
+                  <data bit_width="128"> 717.7205 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4"> 5.3063 </data>
+                    <data bit_width="8"> 18.6775 </data>
+                    <data bit_width="16"> 52.4867 </data>
+                    <data bit_width="32"> 137.7392 </data>
+                    <data bit_width="64"> 360.0951 </data>
+                    <data bit_width="128"> 909.9883 </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4"> 13.7772 </data>
+                    <data bit_width="8"> 63.2427 </data>
+                    <data bit_width="16"> 109.4512 </data>
+                    <data bit_width="32"> 272.6947 </data>
+                    <data bit_width="64"> 773.9810 </data>
+                    <data bit_width="128"> 1872.9 </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4"> 4.8916 </data>
+                    <data bit_width="8"> 15.9570 </data>
+                    <data bit_width="16"> 43.8677 </data>
+                    <data bit_width="32"> 118.2690 </data>
+                    <data bit_width="64"> 314.2848 </data>
+                    <data bit_width="128"> 717.7205 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+          </est_type>
+
+          <est_type name="function_cycle">
+            <!-- Dummy yet -->
+          </est_type>
+
+          <est_type name="function_power">
+            <!-- Dummy yet -->
+          </est_type>
+        </library>
+      </estimation_data>
+
+      <estimation_method>
+         
+        <est_type name="shape">
+
+          <est_index name="area">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of area for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup
+#--------------------------------------------------------------------------#
+$i = 0;
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>\s*(\d+\.?\d+)\s*\<\s*\/data\s*\>/ ) {
+	$bit[$i]  = $1;
+	$data[$i] = $2;
+	$i++;
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+
+
+for ($j = 0; $j < $i; $j++) {
+    if ($bit_width == $bit[$j]) {
+	$ret_data = $data[$j];
+	goto END;
+    }
+}
+
+if ($bit_width < $bit[0]) {
+    
+    # divide by zero
+    if ($bit[1] == $bit[0]) {
+	exit(100);
+    }    
+
+    $ret_data = $data[0] - (($data[1] - $data[0]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+}
+
+elsif ($bit[$i-1] < $bit_width) {
+
+    # divide by zero
+    if ($bit[$i-1] == $bit[$i-2]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$i-1] + (($data[$i-1] - $data[$i-2]) / ($bit[$i-1] - $bit[$i-2])) * ($bit_width - $bit[$i-1]);
+}
+
+else {
+    $j = 0;
+    while ($bit[$j] < $bit_width) {
+	$j++;
+    }
+
+    # divide by zero
+    if ($bit[$j] == $bit[$j-1]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$j-1] + (($data[$j] - $data[$j-1]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+}
+    
+
+END:
+
+$ret_data = &data_round($ret_data, 4);
+
+print "$ret_data\n";
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+                ]]>
+              </script>
+            </parameters>
+
+          </est_index>
+
+           <est_index name="aspect_ratio">
+
+             <!-- Dummy yet -->
+
+           </est_index>
+		
+           <est_index name="height">
+
+             <!-- Dummy yet -->
+
+           </est_index>
+		
+           <est_index name="width">
+
+             <!-- Dummy yet -->
+
+           </est_index>
+		
+        </est_type>
+
+        <est_type name="timing">
+
+          <est_index name="delay">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of delay for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup
+#--------------------------------------------------------------------------#
+$i = 0;
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>\s*(\d+\.?\d+)\s*\<\s*\/data\s*\>/ ) {
+	$bit[$i]  = $1;
+	$data[$i] = $2;
+	$i++;
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+
+
+for ($j = 0; $j < $i; $j++) {
+    if ($bit_width == $bit[$j]) {
+	$ret_data = $data[$j];
+	goto END;
+    }
+}
+
+if ($bit_width < $bit[0]) {
+    
+    # divide by zero
+    if ($bit[1] == $bit[0]) {
+	exit(100);
+    }    
+
+    $ret_data = $data[0] - (($data[1] - $data[0]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+}
+
+elsif ($bit[$i-1] < $bit_width) {
+
+    # divide by zero
+    if ($bit[$i-1] == $bit[$i-2]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$i-1] + (($data[$i-1] - $data[$i-2]) / ($bit[$i-1] - $bit[$i-2])) * ($bit_width - $bit[$i-1]);
+}
+
+else {
+    $j = 0;
+    while ($bit[$j] < $bit_width) {
+	$j++;
+    }
+
+    # divide by zero
+    if ($bit[$j] == $bit[$j-1]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$j-1] + (($data[$j] - $data[$j-1]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+}
+    
+
+END:
+
+$ret_data = &data_round($ret_data, 2);
+
+print "$ret_data\n";
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+                ]]>
+              </script>
+            </parameters>
+          </est_index>
+
+          <est_index name="delay_fullpath">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of delay_fullpath for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+$Round = 1;
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup for delay_fullpath
+#--------------------------------------------------------------------------#
+$n = 0;
+
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>/ ) {
+
+	$bit_width = $1;
+	$bit[$n]   = $bit_width;
+	$n++;
+
+	$_ = <TMP>;
+	$i = 0;
+
+	while (! /\<\s*\/data\s*\>/ ) {
+
+	    # path 
+	    if ( /path\s+(\w+)\s+(\w+)\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "path\t $1\t $2\t ";
+		$delay{$bit_width}[$i] = $3; 
+		$i++;
+	    }
+
+	    # inport
+	    if ( /inport\s+(\w+)\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "inport\t $1\t ";
+		$delay{$bit_width}[$i] = $2;
+		$i++;
+	    }
+
+	    # outport
+	     if ( /outport\s+(\w+)\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "outport\t $1\t ";
+		$delay{$bit_width}[$i] = $2;
+		$i++;
+	    }
+
+	    # internal
+	    if ( /internal\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "internal\t ";
+		$delay{$bit_width}[$i] = $1;
+		$i++;
+	    }
+
+	    $_ = <TMP>;
+	}
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+$line_num = $i;
+
+
+for ($k = 0; $k < $line_num; $k++) {
+
+    for ($j = 0; $j < $n; $j++) {
+	if ($bit_width == $bit[$j]) {
+	    $ret_data = $delay{$bit_width}[$k];
+	    $ret_data = &data_round($ret_data, $Round);
+	    print "$line{$bit_width}[$k] $ret_data\n";
+	    goto NEXT;
+	}
+    }
+
+    if ($bit_width < $bit[0]) {
+
+	# divide by zero
+	if ( $bit[1] - $bit[0] ) {
+	    exit(100);
+	}
+	
+	$ret_data = $delay{$bit[0]}[$k] - (($delay{$bit[1]}[$k] - $delay{$bit[0]}[$k]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+    }
+    
+    elsif ($bit[$n-1] < $bit_width) {
+
+	# divide by zero
+	if ( $bit[$n-1] - $bit[$n-2] ) {
+	    exit(100);
+	}
+
+	$ret_data = $delay{$bit[$n-1]}[$k] + (($delay{$bit[$n-1]}[$k] - $delay{$bit[$n-2]}[$k]) / ($bit[$n-1] - $bit[$n-2])) * ($bit_width - $bit[$n-1]);
+    }
+    
+    else {
+	$j = 0;
+	while ($bit[$j] < $bit_width) {
+	    $j++;
+	}
+
+	# divide by zero
+	if ( $bit[$j] - $bit[$j-1] ) {
+	    exit(100);
+	}
+	
+	$ret_data = $delay{$bit[$j-1]}[$k] + (($delay{$bit[$j]}[$k] - $delay{$bit[$j-1]}[$k]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+    }
+    
+    $ret_data = &data_round($ret_data, $Round);
+    print "$line{$bit[0]}[$k] $ret_data\n";
+
+    
+  NEXT:
+}
+
+
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+
+            </parameters>
+
+          </est_index>
+
+        </est_type>
+
+        <est_type name="power">
+
+          <est_index name="static_power">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of power for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup
+#--------------------------------------------------------------------------#
+$i = 0;
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>\s*(\d+\.?\d+)\s*\<\s*\/data\s*\>/ ) {
+	$bit[$i]  = $1;
+	$data[$i] = $2;
+	$i++;
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+
+
+for ($j = 0; $j < $i; $j++) {
+    if ($bit_width == $bit[$j]) {
+	$ret_data = $data[$j];
+	goto END;
+    }
+}
+
+if ($bit_width < $bit[0]) {
+    
+    # divide by zero
+    if ($bit[1] == $bit[0]) {
+	exit(100);
+    }    
+
+    $ret_data = $data[0] - (($data[1] - $data[0]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+}
+
+elsif ($bit[$i-1] < $bit_width) {
+
+    # divide by zero
+    if ($bit[$i-1] == $bit[$i-2]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$i-1] + (($data[$i-1] - $data[$i-2]) / ($bit[$i-1] - $bit[$i-2])) * ($bit_width - $bit[$i-1]);
+}
+
+else {
+    $j = 0;
+    while ($bit[$j] < $bit_width) {
+	$j++;
+    }
+
+    # divide by zero
+    if ($bit[$j] == $bit[$j-1]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$j-1] + (($data[$j] - $data[$j-1]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+}
+    
+
+END:
+
+$ret_data = &data_round($ret_data, 1);
+
+print "$ret_data\n";
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+                ]]>
+              </script>
+            </parameters>
+
+          </est_index>
+
+        </est_type>
+
+        <est_type name="function_cycle">
+
+        </est_type>
+
+        <est_type name="function_power">
+
+        </est_type>
+
+    
+      </estimation_method>
+
+    </estimation>
+
+
+  </model>
+
+  <model>
+    <design_level> synthesis </design_level>
+    <version> 1.0 </version>
+    <author> <![CDATA[ Yamane Yukinori ]]> </author>
+    <affiliation> <![CDATA[ Osaka Univ. ]]> </affiliation>
+    <model_info> <![CDATA[
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                %
+%    Copyright 2008 ASIP Solutions, Inc. All rights reserved.    %
+%              Copyright 2002-2005 PEAS Project                  %
+%                                                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+]]> </model_info>
+
+    <parameter>
+      <parameter_value key="bit_width">
+        <value> 4 </value>
+        <value> 8 </value>
+        <value> 16 </value>
+        <value> 32 </value>
+        <value> 64 </value>
+        <value> 128 </value>
+      </parameter_value>
+    </parameter>
+
+    <function_description>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator function definition
+
+if ($#ARGV != 0){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width = $ARGV[0];
+$bit_width_1 = $bit_width - 1;
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+
+{
+print <<FHM_DL_FUNCTION
+unsigned shift(unsigned data_in, unsigned ctrl, unsigned mode);
+
+/** ${bit_width}-bit rotator */
+model rotator_${bit_width}{
+  port{
+    in  data_in[${bit_width_1}:0], mode, ctrl[${ctrl_width_1}:0];
+    out data_out[${bit_width_1}:0];
+  }
+
+  /** shift left */
+  function sl{
+    input{
+      unsigned data_in, ctrl;
+    }
+    output{
+      unsigned data_out = shift(data_in, ctrl, mode);
+    }
+    control{
+      unsigned mode;
+    }
+    protocol{
+      [mode == '0']{
+	valid data_out;
+      }
+    }
+  }
+
+  /** shift right */
+  function sr{
+    input{
+      unsigned data_in, ctrl;
+    }
+    output{
+      unsigned data_out = shift(data_in, ctrl, mode);
+    }
+    control{
+      unsigned mode;
+    }
+    protocol{
+      [mode == '1']{
+	valid data_out;
+      }
+    }
+  }
+}
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_description>
+
+    <function_conv>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator function definition
+
+if ($#ARGV != 0){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width = $ARGV[0];
+$bit_width_1 = $bit_width - 1;
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+
+{
+print <<FHM_DL_FUNCTION
+/** shift left */
+function sl {
+  input {
+    bit [$bit_width_1:0] data_in;
+    bit [$ctrl_width_1:0]  ctrl;
+  }
+  output {
+    bit [$bit_width_1:0] data_out;
+  }
+  control {
+    in bit mode;
+  }
+  protocol {
+    single_cycle_protocol {
+      mode = '0';
+    }
+  }
+}
+
+/** shift right */
+function sr {
+  input {
+    bit [$bit_width_1:0] data_in;
+    bit [$ctrl_width_1:0]  ctrl;
+  }
+  output {
+    bit [$bit_width_1:0] data_out;
+  }
+  control {
+    in bit mode;
+  }
+  protocol {
+    single_cycle_protocol {
+      mode = '1';
+    }
+  }
+}
+
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_conv>
+
+    <function_port>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator port infomation in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width = $ARGV[0];
+$bit_width_1 = $bit_width - 1;
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+{
+print <<FHM_DL_PORTINFO
+data_in	in	bit_vector   $bit_width_1   0	data
+mode	in	bit		ctrl
+ctrl	in	bit_vector   $ctrl_width_1   0	data
+data_out	out	bit_vector   $bit_width_1   0	data
+FHM_DL_PORTINFO
+}
+exit (0);
+        ]]>
+      </script>
+    </function_port>
+
+    <design>
+      <design_lang> vhdl </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in synthesis level
+# parameter : instance_name bit_width
+
+if ($#ARGV != 1){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+
+$instance_name = $ARGV[0];
+$bit_width     = $ARGV[1];
+$bit_width_1   = $bit_width - 1;
+
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+{
+print <<FHM_DL_HEADER
+-- Module     : ${bit_width}-bit Barrel Shifter
+-- Feature    : Right or Left, Rotate
+-- References : Started from scratch.
+--            : Pentium architecture.
+-- Author     : Designed by T.Morifuji (c)1996,1997.
+
+-- Version : 1.0  : 
+-- Version : 1.1  : Modified by Y.Yamane 2001/12/26
+
+-- Comment :
+--  mode
+--  0 : Left Rotate
+--  1 : Right Rotate
+
+library IEEE;
+  use IEEE.std_logic_1164.all;
+  use IEEE.std_logic_unsigned.all;
+
+entity $instance_name is
+  port (data_in  : in std_logic_vector($bit_width_1 downto 0);
+        mode     : in std_logic;
+        ctrl     : in std_logic_vector($ctrl_width_1 downto 0);
+        data_out : out std_logic_vector($bit_width_1 downto 0));
+end $instance_name;
+
+architecture synthesis of $instance_name is
+
+FHM_DL_HEADER
+}
+
+if ($bit_width >= 4){
+    print "  signal rot1       : std_logic_vector($bit_width_1 downto 0);\n";
+    print "  signal rot2       : std_logic_vector($bit_width_1 downto 0);\n";
+}
+if ($bit_width >= 8){
+    print "  signal rot4       : std_logic_vector($bit_width_1 downto 0);\n";
+}
+if ($bit_width >= 16){
+    print "  signal rot8       : std_logic_vector($bit_width_1 downto 0);\n";
+}
+if ($bit_width >= 32){
+    print "  signal rot16      : std_logic_vector($bit_width_1 downto 0);\n";
+}
+if ($bit_width >= 64){
+    print "  signal rot32      : std_logic_vector($bit_width_1 downto 0);\n";
+}
+if ($bit_width >= 128){
+    print "  signal rot64      : std_logic_vector($bit_width_1 downto 0);\n";
+}
+
+print "begin  -- synthesis\n";
+
+if ($bit_width >= 4){
+print <<FHM_DL_CTRL_1_2
+  rot1 <= data_in($bit_width-2 downto 0) & data_in($bit_width-1)
+            when mode = '0' and ctrl(0) = '1' else
+          data_in(0) & data_in($bit_width-1 downto 1)
+            when mode = '1' and ctrl(0) = '1' else
+	  data_in;
+
+  rot2 <= rot1($bit_width-3 downto 0) & rot1($bit_width-1 downto $bit_width-2)
+            when mode = '0' and ctrl(1) = '1' else
+          rot1(1 downto 0) & rot1($bit_width-1 downto 2)
+            when mode = '1' and ctrl(1) = '1' else
+	  rot1;
+
+FHM_DL_CTRL_1_2
+}
+if ($bit_width >= 8){
+print <<FHM_DL_CTRL_4
+  rot4 <= rot2($bit_width-5 downto 0) & rot2($bit_width-1 downto $bit_width-4)
+            when mode = '0' and ctrl(2) = '1' else
+          rot2(3 downto 0) & rot2($bit_width-1 downto 4)
+            when mode = '1' and ctrl(2) = '1' else
+	  rot2;
+
+FHM_DL_CTRL_4
+}
+
+if ($bit_width >= 16){
+print <<FHM_DL_CTRL_8
+  rot8 <= rot4($bit_width-9 downto 0) & rot4($bit_width-1 downto $bit_width-8)
+            when mode = '0' and ctrl(3) = '1' else
+          rot4(7 downto 0) & rot4($bit_width-1 downto 8)
+            when mode = '1' and ctrl(3) = '1' else
+	  rot4;
+
+FHM_DL_CTRL_8
+}
+
+if ($bit_width >= 32){
+print <<FHM_DL_CTRL_16
+  rot16 <= rot8($bit_width-17 downto 0) & rot8($bit_width-1 downto $bit_width-16)
+             when mode = '0' and ctrl(4) = '1' else
+           rot8(15 downto 0) & rot8($bit_width-1 downto 16)
+             when mode = '1' and ctrl(4) = '1' else
+	   rot8;
+
+FHM_DL_CTRL_16
+}
+
+if ($bit_width >= 64){
+print <<FHM_DL_CTRL_32
+  rot32 <= rot16($bit_width-33 downto 0) & rot16($bit_width-1 downto $bit_width-32)
+             when mode = '0' and ctrl(5) = '1' else
+           rot16(31 downto 0) & rot16($bit_width-1 downto 32)
+             when mode = '1' and ctrl(5) = '1' else
+	   rot16;
+
+FHM_DL_CTRL_32
+}
+
+if ($bit_width >= 128){
+print <<FHM_DL_CTRL_64
+  rot64 <= rot32($bit_width-65 downto 0) & rot32($bit_width-1 downto $bit_width-64)
+             when mode = '0' and ctrl(6) = '1' else
+           rot32(63 downto 0) & rot32($bit_width-1 downto 64)
+             when mode = '1' and ctrl(6) = '1' else
+	   rot32;
+
+FHM_DL_CTRL_64
+}
+
+print "\n";
+
+if ($bit_width == 4){
+    print "  data_out <= rot2;\n";
+}
+elsif ($bit_width == 8){
+    print "  data_out <= rot4;\n";
+}
+elsif ($bit_width == 16){
+    print "  data_out <= rot8;\n";
+}
+elsif ($bit_width == 32){
+    print "  data_out <= rot16;\n";
+}
+elsif ($bit_width == 64){
+    print "  data_out <= rot32;\n";
+}
+elsif ($bit_width == 128){
+    print "  data_out <= rot64;\n";
+}
+else{
+    print "false\n";
+    exit (100);
+}
+
+print "end synthesis;\n";
+exit (0);
+
+          ]]>
+        </script>
+      </instance>
+
+      <entity></entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+
+      <synthesis>
+        <parameter></parameter>
+        <synthesis_script>
+          <script>
+            <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator synthesis script in synthesis level
+# parameter : instance_name priority bit_width
+
+if ($#ARGV != 2){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name priority bit_width\n";
+    exit (100);
+}
+
+
+$instance_name = $ARGV[0];
+$priority      = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+if ($priority eq "area"){
+  $priority_const = "set_max_area 0";
+}
+elsif ($priority eq "performance"){
+  $priority_const = "set_max_delay -from all_inputs() -to all_outputs() 0";
+}
+elsif ($priority eq "power"){
+  $priority_const = "";
+}
+elsif ($priority eq "none"){
+  $priority_const = "";
+}
+else{
+  print "Not supported priority\n";
+  exit (100);
+}
+
+{
+print <<FHM_DL_SCRIPT
+hdlin_auto_save_templates = TRUE
+
+analyze -f vhdl $instance_name.vhd
+
+elaborate $instance_name
+uniquify
+
+$priority_const
+
+compile 
+
+write -hierarchy -output $instance_name.db
+
+report_area
+report_timing
+
+quit
+FHM_DL_SCRIPT
+}
+exit (0);
+            ]]>
+          </script>
+        </synthesis_script>
+      </synthesis>
+    </design>
+
+    <design>
+      <design_lang> Verilog </design_lang>
+                                                                                
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in synthesis level
+# parameter : instance_name bit_width
+
+if ($#ARGV != 1){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+
+$instance_name = $ARGV[0];
+$bit_width     = $ARGV[1];
+$bit_width_1   = $bit_width - 1;
+$bit_width_2   = $bit_width - 2;
+$bit_width_3   = $bit_width - 3;
+$bit_width_4   = $bit_width - 4;
+$bit_width_5   = $bit_width - 5;
+$bit_width_8   = $bit_width - 8;
+$bit_width_9   = $bit_width - 9;
+$bit_width_16  = $bit_width - 16;
+$bit_width_17  = $bit_width - 17;
+$bit_width_32  = $bit_width - 32;
+$bit_width_33  = $bit_width - 33;
+$bit_width_64  = $bit_width - 64;
+$bit_width_65  = $bit_width - 65;
+
+$ctrl_width = log($bit_width)/log(2);
+$ctrl_width_1 = $ctrl_width - 1;
+
+{
+print <<FHM_DL_HEADER
+// Module     : ${bit_width}-bit Barrel Shifter
+// Feature    : Right or Left, Rotate
+// References : Started from scratch.
+//            : Pentium architecture.
+// Author     : Designed by T.Morifuji (c)1996,1997.
+\n
+// Version : 1.0  : 
+// Version : 1.1  : Modified by Y.Yamane 2001/12/26
+\n
+// Comment :
+//  mode
+//  0 : Left Rotate
+//  1 : Right Rotate
+\n
+module $instance_name (
+  data_in  ,
+  mode     ,
+  ctrl     ,
+  data_out ) ;
+\n
+input  [$bit_width_1:0] data_in  ;
+input         mode     ;
+input  [ $ctrl_width_1:0] ctrl     ;
+output [$bit_width_1:0] data_out ;
+\n
+wire  [$bit_width_1:0] data_in  ;
+wire         mode     ;
+wire  [ $ctrl_width_1:0] ctrl     ;
+wire  [$bit_width_1:0] data_out ;
+\n
+FHM_DL_HEADER
+}
+
+if ($bit_width >= 4){
+    print "wire [$bit_width_1:0] rot1  ;\n";
+    print "wire [$bit_width_1:0] rot2  ;\n";
+}
+if ($bit_width >= 8){
+    print "wire [$bit_width_1:0] rot4  ;\n";
+}
+if ($bit_width >= 16){
+    print "wire [$bit_width_1:0] rot8  ;\n";
+}
+if ($bit_width >= 32){
+    print "wire [$bit_width_1:0] rot16 ;\n";
+}
+if ($bit_width >= 64){
+    print "wire [$bit_width_1:0] rot32 ;\n";
+}
+if ($bit_width >= 128){
+    print "wire [$bit_width_1:0] rot64 ;\n";
+}
+
+if ($bit_width >= 4){
+print <<FHM_DL_CTRL_1_2
+\n
+assign  rot1 = (mode == 1'b0 && ctrl[0] == 1'b1) ? {data_in[$bit_width_2:0] , data_in[$bit_width_1]} :
+               (mode == 1'b1 && ctrl[0] == 1'b1) ? {data_in[0] , data_in[$bit_width_1:1]} : data_in ;
+\n
+assign  rot2 = (mode == 1'b0 && ctrl[1] == 1'b1) ? {rot1[$bit_width_3:0] , rot1[$bit_width_1:$bit_width_2]} :
+               (mode == 1'b1 && ctrl[1] == 1'b1) ? {rot1[1:0] , rot1[$bit_width_1:2]} : rot1 ;
+
+FHM_DL_CTRL_1_2
+}
+if ($bit_width >= 8){
+print <<FHM_DL_CTRL_4
+\n
+assign  rot4 = (mode == 1'b0 && ctrl[2] == 1'b1) ? {rot2[$bit_width_5:0] , rot2[$bit_width_1:$bit_width_4]} :
+               (mode == 1'b1 && ctrl[2] == 1'b1) ? {rot2[3:0] , rot2[$bit_width_1:4]} : rot2 ;
+
+FHM_DL_CTRL_4
+}
+
+if ($bit_width >= 16){
+print <<FHM_DL_CTRL_8
+\n
+assign  rot8 = (mode == 1'b0 && ctrl[3] == 1'b1) ? {rot4[$bit_width_9:0] , rot4[$bit_width_1:$bit_width_8]} :
+               (mode == 1'b1 && ctrl[3] == 1'b1) ? {rot4[7:0] , rot4[$bit_width_1:8]} : rot4 ;
+
+FHM_DL_CTRL_8
+}
+
+if ($bit_width >= 32){
+print <<FHM_DL_CTRL_16
+\n
+assign  rot16 = (mode == 1'b0 && ctrl[4] == 1'b1) ? {rot8[$bit_width_17:0] , rot8[$bit_width_1:$bit_width_16]} :
+               (mode == 1'b1 && ctrl[4] == 1'b1) ? {rot8[15:0] , rot8[$bit_width_1:16]} : rot8 ;
+
+FHM_DL_CTRL_16
+}
+
+if ($bit_width >= 64){
+print <<FHM_DL_CTRL_32
+\n
+assign  rot32 = (mode == 1'b0 && ctrl[5] == 1'b1) ? {rot16[$bit_width_33:0] , rot16[$bit_width_1:$bit_width_32]} :
+               (mode == 1'b1 && ctrl[5] == 1'b1) ? {rot16[31:0] , rot16[$bit_width_1:32]} : rot16 ;
+
+FHM_DL_CTRL_32
+}
+
+if ($bit_width >= 128){
+print <<FHM_DL_CTRL_64
+\n
+assign  rot64 = (mode == 1'b0 && ctrl[6] == 1'b1) ? {rot32[$bit_width_65:0] , rot32[$bit_width_1:$bit_width_64]} :
+               (mode == 1'b1 && ctrl[6] == 1'b1) ? {rot32[63:0] , rot32[$bit_width_1:64]} : rot32 ;
+
+FHM_DL_CTRL_64
+}
+
+print "\n";
+
+if ($bit_width == 4){
+    print "assign  data_out = rot2 ;\n";
+}
+elsif ($bit_width == 8){
+    print "assign  data_out = rot4 ;\n";
+}
+elsif ($bit_width == 16){
+    print "assign  data_out = rot8 ;\n";
+}
+elsif ($bit_width == 32){
+    print "assign  data_out = rot16;\n";
+}
+elsif ($bit_width == 64){
+    print "assign  data_out = rot32;\n";
+}
+elsif ($bit_width == 128){
+    print "assign  data_out = rot64;\n";
+}
+else{
+    print "false\n";
+    exit (100);
+}
+
+print "endmodule\n";
+exit (0);
+          ]]>
+        </script>
+      </instance>
+                                                                                
+      <entity></entity>
+                                                                                
+      <testvector></testvector>
+                                                                                
+      <synthesis></synthesis>
+    </design>
+
+    <design>
+      <design_lang> SystemC Header </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in behavior level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+$bit_width_1   = $bit_width - 1;
+$bit_width_2   = $bit_width - 2;
+
+$ctrl_width    = log($bit_width)/log(2);
+if ($ctrl_width == int($ctrl_width)){
+    $ctrl_width = int($ctrl_width);
+}
+else{
+    $ctrl_width = int($ctrl_width) + 1;
+}
+$ctrl_width_1  = $ctrl_width - 1;
+
+if ($bit_width <= 64) {
+    $input_type = "sc_dt::sc_uint<$bit_width>";
+} else {
+    $input_type = "sc_dt::sc_biguint<$bit_width>";
+}
+
+if ($ctrl_width <= 64) {
+    $ctrl_type = "sc_dt::sc_uint<$ctrl_width>";
+} else {
+    $ctrl_type = "sc_dt::sc_biguint<$ctrl_type>";
+}
+
+$macro = "__" . uc($name_space) . "_" . uc($instance_name) . "_H__";
+
+{
+print <<FHM_DL_INSTANCE_HEAD1
+#ifndef $macro
+#define $macro 1
+
+// Module     : ${bit_width}-bit Barrel Shifter
+// Feature    : Right or Left Rotater
+// References : Started from scratch.
+//            : Pentium architecture.
+// Author     : Designed by T.Morifuji (c)1996,1997.
+
+// Version : 1.0  : 
+// Version : 1.1  : Modified by Y.Yamane 2001/12/26
+// Version : 1.2  : Modified by Y.Yamane 2001/01/15
+
+// Comment :
+//  mode
+//  0 : Left Rotate
+//  1 : Right Rotate
+FHM_DL_INSTANCE_HEAD1
+}
+
+{
+print <<FHM_DL_INSTANCE_HEAD2
+
+#include <systemc>
+
+namespace $name_space {
+  SC_MODULE($instance_name) {
+    sc_core::sc_in< $input_type > data_in;
+    sc_core::sc_in< bool > mode;
+    sc_core::sc_in< $ctrl_type > ctrl;
+    sc_core::sc_out< $input_type > data_out;
+  
+    SC_CTOR($instance_name) :
+      data_in("data_in"),
+      mode("mode"),
+      ctrl("ctrl"),
+      data_out("data_out")
+    {
+      SC_METHOD(process);
+      sensitive << data_in << mode << ctrl;
+    }
+  
+    void process();
+  };
+};
+
+#endif // $macro
+FHM_DL_INSTANCE_HEAD2
+};
+
+exit (0);
+]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <design>
+      <design_lang> SystemC Program </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates rotator instance in behavior level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2){
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+$bit_width_1   = $bit_width - 1;
+$bit_width_2   = $bit_width - 2;
+$bit_width_d   = $bit_width * 2;
+$bit_width_d_1 = $bit_width * 2 - 1;
+
+$ctrl_width    = log($bit_width)/log(2);
+if ($ctrl_width == int($ctrl_width)){
+    $ctrl_width = int($ctrl_width);
+}
+else{
+    $ctrl_width = int($ctrl_width) + 1;
+}
+$ctrl_width_1  = $ctrl_width - 1;
+
+if ( $bit_width <= 64 ) {
+  $data_type = "sc_dt::sc_uint<$bit_width>";
+} else {
+  $data_type = "sc_dt::sc_biguint<$bit_width>";
+}
+
+{
+print <<FHM_DL_INSTANCE_HEAD1
+#include "${instance_name}.h"
+
+// Module     : ${bit_width}-bit Barrel Shifter
+// Feature    : Right or Left Rotater
+// References : Started from scratch.
+//            : Pentium architecture.
+// Author     : Designed by T.Morifuji (c)1996,1997.
+
+// Version : 1.0  : 
+// Version : 1.1  : Modified by Y.Yamane 2001/12/26
+// Version : 1.2  : Modified by Y.Yamane 2001/01/15
+
+// Comment :
+//  mode
+//  0 : Left Rotate
+//  1 : Right Rotate
+FHM_DL_INSTANCE_HEAD1
+}
+
+{
+print <<FHM_DL_INSTANCE_HEAD2
+
+#include <systemc>
+
+void ${name_space}::${instance_name}::process() 
+{
+FHM_DL_INSTANCE_HEAD2
+}
+
+print <<FHM_DL_V_INSTANCE;
+  sc_dt::sc_biguint<$bit_width_d> tmp;
+  int offsetH, offsetL;
+  int amount;
+
+  tmp = (data_in.read(), data_in.read());
+  amount = ctrl.read();
+
+  if(mode.read() == 0){  // Left Rotate
+    offsetH = $bit_width_d_1 - amount;
+    offsetL = $bit_width - amount;
+  }else{
+    offsetH = $bit_width_1 + amount;
+    offsetL = amount;
+  }
+
+  data_out.write( $data_type(tmp.range(offsetH, offsetL)) );
+FHM_DL_V_INSTANCE
+print "}\n";
+
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <estimation>
+      <estimation_data>
+        <library name="OSAKA">
+
+          <est_type name="shape">
+            <est_index name="area">
+              <unit> mm2 </unit>
+              <translate>
+                <translate_value key="gate"> 4201.68 </translate_value>
+                <translate_value key="mm2">  1 </translate_value>
+              </translate>
+
+              <parameters name="">
+                <max>
+                  <data bit_width="4"> 0.0242215825574532 </data>
+                  <data bit_width="8"> 0.119637610432018 </data>
+                  <data bit_width="16"> 0.22808737433598 </data>
+                  <data bit_width="32"> 0.62145331129453 </data>
+                  <data bit_width="64"> 1.80864456669713 </data>
+                  <data bit_width="128"> 4.40703183012509 </data>
+                </max>
+                <min>
+                  <data bit_width="4"> 0.0127027617524419 </data>
+                  <data bit_width="8"> 0.0403362745378039 </data>
+                  <data bit_width="16"> 0.110431785143086 </data>
+                  <data bit_width="32"> 0.278546389301422 </data>
+                  <data bit_width="64"> 0.746177765798442 </data>
+                  <data bit_width="128"> 1.94295619276099 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4"> 0.0127027617524419 </data>
+                    <data bit_width="8"> 0.0403362745378039 </data>
+                    <data bit_width="16"> 0.110431785143086 </data>
+                    <data bit_width="32"> 0.278546389301422 </data>
+                    <data bit_width="64"> 0.746177765798442 </data>
+                    <data bit_width="128"> 1.94295619276099 </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4"> 0.0242215825574532 </data>
+                    <data bit_width="8"> 0.119637610432018 </data>
+                    <data bit_width="16"> 0.22808737433598 </data>
+                    <data bit_width="32"> 0.62145331129453 </data>
+                    <data bit_width="64"> 1.80864456669713 </data>
+                    <data bit_width="128"> 4.40703183012509 </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4"> 0.0137477342396375 </data>
+                    <data bit_width="8"> 0.0466246927419508 </data>
+                    <data bit_width="16"> 0.12745300070448 </data>
+                    <data bit_width="32"> 0.318162762276042 </data>
+                    <data bit_width="64"> 0.830449709639953 </data>
+                    <data bit_width="128"> 2.41451642938063 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+
+            <est_index name="aspect_ratio">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="height">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="width">
+              <!-- Dummy yet -->
+            </est_index>
+          </est_type>
+
+          <est_type name="timing">
+            <est_index name="delay">
+              <unit> ns </unit>
+
+              <parameters name="">
+                <max>
+                  <data bit_width="4"> 1.71 </data>
+                  <data bit_width="8"> 2.92 </data>
+                  <data bit_width="16"> 4.57 </data>
+                  <data bit_width="32"> 6.22 </data>
+                  <data bit_width="64"> 7.05 </data>
+                  <data bit_width="128"> 10.92 </data>
+                </max>
+                <min>
+                  <data bit_width="4"> 1.00 </data>
+                  <data bit_width="8"> 1.50 </data>
+                  <data bit_width="16"> 2.18 </data>
+                  <data bit_width="32"> 2.91 </data>
+                  <data bit_width="64"> 3.40 </data>
+                  <data bit_width="128"> 4.36 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4"> 1.71 </data>
+                    <data bit_width="8"> 2.34 </data>
+                    <data bit_width="16"> 3.21 </data>
+                    <data bit_width="32"> 4.12 </data>
+                    <data bit_width="64"> 5.50 </data>
+                    <data bit_width="128"> 8.93 </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4"> 1.00 </data>
+                    <data bit_width="8"> 1.50 </data>
+                    <data bit_width="16"> 2.18 </data>
+                    <data bit_width="32"> 2.91 </data>
+                    <data bit_width="64"> 3.40 </data>
+                    <data bit_width="128"> 4.36 </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4"> 1.51 </data>
+                    <data bit_width="8"> 2.92 </data>
+                    <data bit_width="16"> 4.57 </data>
+                    <data bit_width="32"> 6.22 </data>
+                    <data bit_width="64"> 7.05 </data>
+                    <data bit_width="128"> 10.92 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+
+            <est_index name="delay_fullpath">
+              <unit> ns </unit>
+
+              <parameters name="">
+                <max>
+                  <data bit_width="4">
+                    path	 data_in	 data_out	 0.76
+                    path	 ctrl	 data_out	 1.39
+                  </data>
+                  <data bit_width="8">
+                    path	 data_in	 data_out	 1.25
+                    path	 ctrl	 data_out	 2.65
+                  </data>
+                  <data bit_width="16">
+                    path	 data_in	 data_out	 1.77
+                    path	 ctrl	 data_out	 2.52
+                  </data>
+                  <data bit_width="32">
+                    path	 data_in	 data_out	 2.30
+                    path	 ctrl	 data_out	 3.70
+                  </data>
+                </max>
+                <min>
+                  <data bit_width="4">
+                    path	 data_in	 data_out	 0.76
+                    path	 ctrl	 data_out	 1.39
+                  </data>
+                  <data bit_width="8">
+                    path	 data_in	 data_out	 1.25
+                    path	 ctrl	 data_out	 2.65
+                  </data>
+                  <data bit_width="16">
+                    path	 data_in	 data_out	 1.77
+                    path	 ctrl	 data_out	 2.52
+                  </data>
+                  <data bit_width="32">
+                    path	 data_in	 data_out	 2.30
+                    path	 ctrl	 data_out	 3.70
+                  </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4">
+                      path	 data_in	 data_out	 0.70
+                      path	 ctrl	 data_out	 1.39
+                    </data>
+                    <data bit_width="8">
+                      path	 data_in	 data_out	 1.23
+                      path	 ctrl	 data_out	 1.92
+                    </data>
+                    <data bit_width="16">
+                      path	 data_in	 data_out	 1.77
+                      path	 ctrl	 data_out	 3.80
+                    </data>
+                    <data bit_width="32">
+                      path	 data_in	 data_out	 2.30
+                      path	 ctrl	 data_out	 3.94
+                    </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4">
+                      path	 data_in	 data_out	 0.63
+                      path	 ctrl	 data_out	 0.63
+                    </data>
+                    <data bit_width="8">
+                      path	 data_in	 data_out	 0.96
+                      path	 ctrl	 data_out	 0.96
+                    </data>
+                    <data bit_width="16">
+                      path	 data_in	 data_out	 1.37
+                      path	 ctrl	 data_out	 1.37
+                    </data>
+                    <data bit_width="32">
+                      path	 data_in	 data_out	 1.60
+                      path	 ctrl	 data_out	 1.60
+                    </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4">
+                      path	 data_in	 data_out	 0.76
+                      path	 ctrl	 data_out	 1.39
+                    </data>
+                    <data bit_width="8">
+                      path	 data_in	 data_out	 1.25
+                      path	 ctrl	 data_out	 2.65
+                    </data>
+                    <data bit_width="16">
+                      path	 data_in	 data_out	 1.77
+                      path	 ctrl	 data_out	 2.52
+                    </data>
+                    <data bit_width="32">
+                      path	 data_in	 data_out	 2.30
+                      path	 ctrl	 data_out	 3.70
+                    </data>
+                  </priority>
+                </typ>
+              </parameters>
+
+            </est_index>
+          </est_type>
+
+          <est_type name="power">
+            <est_index name="static_power">
+              <unit> mW </unit>
+              <parameters name="">
+                <max>
+                  <data bit_width="4"> 13.7772 </data>
+                  <data bit_width="8"> 63.2427 </data>
+                  <data bit_width="16"> 109.4512 </data>
+                  <data bit_width="32"> 272.6947 </data>
+                  <data bit_width="64"> 773.9810 </data>
+                  <data bit_width="128"> 1872.9 </data>
+                </max>
+                <min>
+                  <data bit_width="4"> 4.8916 </data>
+                  <data bit_width="8"> 15.9570 </data>
+                  <data bit_width="16"> 43.8677 </data>
+                  <data bit_width="32"> 118.2690 </data>
+                  <data bit_width="64"> 314.2848 </data>
+                  <data bit_width="128"> 717.7205 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                    <data bit_width="4"> 5.3063 </data>
+                    <data bit_width="8"> 18.6775 </data>
+                    <data bit_width="16"> 52.4867 </data>
+                    <data bit_width="32"> 137.7392 </data>
+                    <data bit_width="64"> 360.0951 </data>
+                    <data bit_width="128"> 909.9883 </data>
+                  </priority>
+                  <priority name="delay">
+                    <data bit_width="4"> 13.7772 </data>
+                    <data bit_width="8"> 63.2427 </data>
+                    <data bit_width="16"> 109.4512 </data>
+                    <data bit_width="32"> 272.6947 </data>
+                    <data bit_width="64"> 773.9810 </data>
+                    <data bit_width="128"> 1872.9 </data>
+                  </priority>
+                  <priority name="power">
+                    <data bit_width="4"> 4.8916 </data>
+                    <data bit_width="8"> 15.9570 </data>
+                    <data bit_width="16"> 43.8677 </data>
+                    <data bit_width="32"> 118.2690 </data>
+                    <data bit_width="64"> 314.2848 </data>
+                    <data bit_width="128"> 717.7205 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+          </est_type>
+
+          <est_type name="function_cycle">
+            <unit> cycle </unit>
+
+            <est_index name="cycle">
+              <parameters name="">
+                <function name="sl">
+                  <priority name="area"><data bit_width="0"></data></priority>
+                  <priority name="delay"><data bit_width="0"></data></priority>
+                  <priority name="power"><data bit_width="0"></data></priority>
+                </function>
+                <function name="sr">
+                  <priority name="area"><data bit_width="0"></data></priority>
+                  <priority name="delay"><data bit_width="0"></data></priority>
+                  <priority name="power"><data bit_width="0"></data></priority>
+                </function>
+              </parameters>
+            </est_index>
+
+            <est_index name="latency">
+              <parameters name="">
+                <function name="sl">
+                  <priority name="area"><data bit_width="0"></data></priority>
+                  <priority name="delay"><data bit_width="0"></data></priority>
+                  <priority name="power"><data bit_width="0"></data></priority>
+                </function>
+                <function name="sr">
+                  <priority name="area"><data bit_width="0"></data></priority>
+                  <priority name="delay"><data bit_width="0"></data></priority>
+                  <priority name="power"><data bit_width="0"></data></priority>
+                </function>
+              </parameters>
+            </est_index>
+
+            <est_index name="throughput">
+              <parameters name="">
+                <function name="sl">
+                  <priority name="area"><data bit_width="0"></data></priority>
+                  <priority name="delay"><data bit_width="0"></data></priority>
+                  <priority name="power"><data bit_width="0"></data></priority>
+                </function>
+                <function name="sr">
+                  <priority name="area"><data bit_width="0"></data></priority>
+                  <priority name="delay"><data bit_width="0"></data></priority>
+                  <priority name="power"><data bit_width="0"></data></priority>
+                </function>
+              </parameters>
+            </est_index>
+
+          </est_type>
+
+          <est_type name="function_power">
+            <!-- Dummy yet -->
+          </est_type>
+        </library>
+      </estimation_data>
+
+      <estimation_method>
+         
+        <est_type name="shape">
+
+          <est_index name="area">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of area for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup
+#--------------------------------------------------------------------------#
+$i = 0;
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>\s*(\d+\.?\d+)\s*\<\s*\/data\s*\>/ ) {
+	$bit[$i]  = $1;
+	$data[$i] = $2;
+	$i++;
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+
+
+for ($j = 0; $j < $i; $j++) {
+    if ($bit_width == $bit[$j]) {
+	$ret_data = $data[$j];
+	goto END;
+    }
+}
+
+if ($bit_width < $bit[0]) {
+    
+    # divide by zero
+    if ($bit[1] == $bit[0]) {
+	exit(100);
+    }    
+
+    $ret_data = $data[0] - (($data[1] - $data[0]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+}
+
+elsif ($bit[$i-1] < $bit_width) {
+
+    # divide by zero
+    if ($bit[$i-1] == $bit[$i-2]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$i-1] + (($data[$i-1] - $data[$i-2]) / ($bit[$i-1] - $bit[$i-2])) * ($bit_width - $bit[$i-1]);
+}
+
+else {
+    $j = 0;
+    while ($bit[$j] < $bit_width) {
+	$j++;
+    }
+
+    # divide by zero
+    if ($bit[$j] == $bit[$j-1]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$j-1] + (($data[$j] - $data[$j-1]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+}
+    
+
+END:
+
+$ret_data = &data_round($ret_data, 4);
+
+print "$ret_data\n";
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+                ]]>
+              </script>
+            </parameters>
+
+          </est_index>
+
+           <est_index name="aspect_ratio">
+
+             <!-- Dummy yet -->
+
+           </est_index>
+		
+           <est_index name="height">
+
+             <!-- Dummy yet -->
+
+           </est_index>
+		
+           <est_index name="width">
+
+             <!-- Dummy yet -->
+
+           </est_index>
+		
+        </est_type>
+
+        <est_type name="timing">
+
+          <est_index name="delay">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of delay for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup
+#--------------------------------------------------------------------------#
+$i = 0;
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>\s*(\d+\.?\d+)\s*\<\s*\/data\s*\>/ ) {
+	$bit[$i]  = $1;
+	$data[$i] = $2;
+	$i++;
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+
+
+for ($j = 0; $j < $i; $j++) {
+    if ($bit_width == $bit[$j]) {
+	$ret_data = $data[$j];
+	goto END;
+    }
+}
+
+if ($bit_width < $bit[0]) {
+    
+    # divide by zero
+    if ($bit[1] == $bit[0]) {
+	exit(100);
+    }    
+
+    $ret_data = $data[0] - (($data[1] - $data[0]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+}
+
+elsif ($bit[$i-1] < $bit_width) {
+
+    # divide by zero
+    if ($bit[$i-1] == $bit[$i-2]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$i-1] + (($data[$i-1] - $data[$i-2]) / ($bit[$i-1] - $bit[$i-2])) * ($bit_width - $bit[$i-1]);
+}
+
+else {
+    $j = 0;
+    while ($bit[$j] < $bit_width) {
+	$j++;
+    }
+
+    # divide by zero
+    if ($bit[$j] == $bit[$j-1]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$j-1] + (($data[$j] - $data[$j-1]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+}
+    
+
+END:
+
+$ret_data = &data_round($ret_data, 2);
+
+print "$ret_data\n";
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+                ]]>
+              </script>
+            </parameters>
+          </est_index>
+
+          <est_index name="delay_fullpath">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of delay_fullpath for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+$Round = 1;
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup for delay_fullpath
+#--------------------------------------------------------------------------#
+$n = 0;
+
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>/ ) {
+
+	$bit_width = $1;
+	$bit[$n]   = $bit_width;
+	$n++;
+
+	$_ = <TMP>;
+	$i = 0;
+
+	while (! /\<\s*\/data\s*\>/ ) {
+
+	    # path 
+	    if ( /path\s+(\w+)\s+(\w+)\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "path\t $1\t $2\t ";
+		$delay{$bit_width}[$i] = $3; 
+		$i++;
+	    }
+
+	    # inport
+	    if ( /inport\s+(\w+)\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "inport\t $1\t ";
+		$delay{$bit_width}[$i] = $2;
+		$i++;
+	    }
+
+	    # outport
+	     if ( /outport\s+(\w+)\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "outport\t $1\t ";
+		$delay{$bit_width}[$i] = $2;
+		$i++;
+	    }
+
+	    # internal
+	    if ( /internal\s+(\d+\.?\d+)/ ) {
+		$line{$bit_width}[$i]  = "internal\t ";
+		$delay{$bit_width}[$i] = $1;
+		$i++;
+	    }
+
+	    $_ = <TMP>;
+	}
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+$line_num = $i;
+
+
+for ($k = 0; $k < $line_num; $k++) {
+
+    for ($j = 0; $j < $n; $j++) {
+	if ($bit_width == $bit[$j]) {
+	    $ret_data = $delay{$bit_width}[$k];
+	    $ret_data = &data_round($ret_data, $Round);
+	    print "$line{$bit_width}[$k] $ret_data\n";
+	    goto NEXT;
+	}
+    }
+
+    if ($bit_width < $bit[0]) {
+
+	# divide by zero
+	if ( $bit[1] - $bit[0] ) {
+	    exit(100);
+	}
+	
+	$ret_data = $delay{$bit[0]}[$k] - (($delay{$bit[1]}[$k] - $delay{$bit[0]}[$k]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+    }
+    
+    elsif ($bit[$n-1] < $bit_width) {
+
+	# divide by zero
+	if ( $bit[$n-1] - $bit[$n-2] ) {
+	    exit(100);
+	}
+
+	$ret_data = $delay{$bit[$n-1]}[$k] + (($delay{$bit[$n-1]}[$k] - $delay{$bit[$n-2]}[$k]) / ($bit[$n-1] - $bit[$n-2])) * ($bit_width - $bit[$n-1]);
+    }
+    
+    else {
+	$j = 0;
+	while ($bit[$j] < $bit_width) {
+	    $j++;
+	}
+
+	# divide by zero
+	if ( $bit[$j] - $bit[$j-1] ) {
+	    exit(100);
+	}
+	
+	$ret_data = $delay{$bit[$j-1]}[$k] + (($delay{$bit[$j]}[$k] - $delay{$bit[$j-1]}[$k]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+    }
+    
+    $ret_data = &data_round($ret_data, $Round);
+    print "$line{$bit[0]}[$k] $ret_data\n";
+
+    
+  NEXT:
+}
+
+
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+
+            </parameters>
+
+          </est_index>
+
+        </est_type>
+
+        <est_type name="power">
+
+          <est_index name="static_power">
+
+            <parameters name="">
+               <script>
+                 <![CDATA[
+#!/usr/bin/perl
+# -------------------------------------------------------------------#
+# Estimation method of power for rotator() .
+#
+# Author : PEAS Project
+# Date   : 2001/12
+# -------------------------------------------------------------------#
+
+if (! open(TMP, "<$ARGV[2]")) {
+    print STDOUT ("Data file '$ARGV[2]' not found.\n");
+    exit(100);
+}
+
+#--------------------------------------------------------------------------#
+# Type: Table lookup
+#--------------------------------------------------------------------------#
+$i = 0;
+while (<TMP>) {
+    if ( /\<\s*data\s+bit\_width\=\"(\d+)\"\s*\>\s*(\d+\.?\d+)\s*\<\s*\/data\s*\>/ ) {
+	$bit[$i]  = $1;
+	$data[$i] = $2;
+	$i++;
+    }
+}
+close(TMP);
+
+$bit_width = $ARGV[1];
+
+
+for ($j = 0; $j < $i; $j++) {
+    if ($bit_width == $bit[$j]) {
+	$ret_data = $data[$j];
+	goto END;
+    }
+}
+
+if ($bit_width < $bit[0]) {
+    
+    # divide by zero
+    if ($bit[1] == $bit[0]) {
+	exit(100);
+    }    
+
+    $ret_data = $data[0] - (($data[1] - $data[0]) / ($bit[1] - $bit[0])) * ($bit[0] - $bit_width);
+}
+
+elsif ($bit[$i-1] < $bit_width) {
+
+    # divide by zero
+    if ($bit[$i-1] == $bit[$i-2]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$i-1] + (($data[$i-1] - $data[$i-2]) / ($bit[$i-1] - $bit[$i-2])) * ($bit_width - $bit[$i-1]);
+}
+
+else {
+    $j = 0;
+    while ($bit[$j] < $bit_width) {
+	$j++;
+    }
+
+    # divide by zero
+    if ($bit[$j] == $bit[$j-1]) {
+	exit(100);
+    }
+
+    $ret_data = $data[$j-1] + (($data[$j] - $data[$j-1]) / ($bit[$j] - $bit[$j-1])) * ($bit_width - $bit[$j-1]);
+}
+    
+
+END:
+
+$ret_data = &data_round($ret_data, 1);
+
+print "$ret_data\n";
+exit(0);
+
+
+sub data_round 
+{
+    my ( $input_data, $decimals ) = @_;
+    my ( $format, $magic, $output_data );
+
+    $format = '%.' . $decimals . 'f';
+    $magic = ($input_data > 0) ? 0.5 : -0.5;
+    
+    $output_data = sprintf($format, int(($input_data * (10 ** $decimals)) + $magic) / (10 ** $decimals));
+
+    return($output_data);
+}
+
+                ]]>
+              </script>
+            </parameters>
+
+          </est_index>
+
+        </est_type>
+
+        <est_type name="function_cycle">
+          <est_index name="cycle">
+            <parameters name="">
+              <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+              </script>
+            </parameters>
+          </est_index>
+
+          <est_index name="latency">
+            <parameters name="">
+              <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+              </script>
+            </parameters>
+          </est_index>
+
+          <est_index name="throughput">
+            <parameters name="">
+              <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+              </script>
+            </parameters>
+          </est_index>
+
+        </est_type>
+
+        <est_type name="function_power">
+
+        </est_type>
+
+    
+      </estimation_method>
+
+    </estimation>
+
+
+  </model>
+</FHM>

@@ -1,0 +1,5749 @@
+Index: config.sub
+===================================================================
+RCS file: /home/prj/asip/cvs/gcc422/config.sub,v
+retrieving revision 1.1.1.1
+retrieving revision 1.2
+diff -u -p -r1.1.1.1 -r1.2
+--- config.sub	14 Nov 2007 09:39:50 -0000	1.1.1.1
++++ config.sub	26 Nov 2007 10:10:52 -0000	1.2
+@@ -244,7 +244,7 @@ case $basic_machine in
+ 	| arc | arm | arm[bl]e | arme[lb] | armv[2345] | armv[345][lb] | avr | avr32 \
+ 	| bfin \
+ 	| c4x | clipper \
+-	| d10v | d30v | dlx | dsp16xx \
++	| d10v | d30v | dlx | brownie32 | dsp16xx \
+ 	| fr30 | frv \
+ 	| h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] | hppa64 \
+ 	| i370 | i860 | i960 | ia64 \
+@@ -322,7 +322,7 @@ case $basic_machine in
+ 	| bfin-* | bs2000-* \
+ 	| c[123]* | c30-* | [cjt]90-* | c4x-* | c54x-* | c55x-* | c6x-* \
+ 	| clipper-* | craynv-* | cydra-* \
+-	| d10v-* | d30v-* | dlx-* \
++	| d10v-* | d30v-* | dlx-* | brownie32-* \
+ 	| elxsi-* \
+ 	| f30[01]-* | f700-* | fr30-* | frv-* | fx80-* \
+ 	| h8300-* | h8500-* \
+Index: configure
+===================================================================
+RCS file: /home/prj/asip/cvs/gcc422/configure,v
+retrieving revision 1.1.1.1
+retrieving revision 1.2
+diff -u -p -r1.1.1.1 -r1.2
+--- configure	14 Nov 2007 09:39:50 -0000	1.1.1.1
++++ configure	26 Nov 2007 10:10:52 -0000	1.2
+@@ -1383,6 +1383,12 @@ case "${target}" in
+   d30v-*-*)
+     noconfigdirs="$noconfigdirs ${libgcj} gdb"
+     ;;
++  dlx-*-*)
++    noconfigdirs="$noconfigdirs target-libstdc++-v3 target-libgloss ${libgcj}"
++    ;;
++  brownie32-*-*)
++    noconfigdirs="$noconfigdirs target-libstdc++-v3 target-libgloss ${libgcj}"
++    ;;
+   fr30-*-elf*)
+     noconfigdirs="$noconfigdirs ${libgcj} gdb"
+     ;;
+Index: gcc/config.gcc
+===================================================================
+RCS file: /home/prj/asip/cvs/gcc422/gcc/config.gcc,v
+retrieving revision 1.1.1.1
+retrieving revision 1.2
+diff -u -p -r1.1.1.1 -r1.2
+--- gcc/config.gcc	14 Nov 2007 09:40:07 -0000	1.1.1.1
++++ gcc/config.gcc	26 Nov 2007 10:10:52 -0000	1.2
+@@ -1,42 +1,3 @@
+-# GCC target-specific configuration file.
+-# Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+-# Free Software Foundation, Inc.
+-
+-#This file is part of GCC.
+-
+-#GCC is free software; you can redistribute it and/or modify it under
+-#the terms of the GNU General Public License as published by the Free
+-#Software Foundation; either version 3, or (at your option) any later
+-#version.
+-
+-#GCC is distributed in the hope that it will be useful, but WITHOUT
+-#ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+-#FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+-#for more details.
+-
+-#You should have received a copy of the GNU General Public License
+-#along with GCC; see the file COPYING3.  If not see
+-#<http://www.gnu.org/licenses/>.
+-
+-# This is the GCC target-specific configuration file
+-# where a configuration type is mapped to different system-specific
+-# definitions and files.  This is invoked by the autoconf-generated
+-# configure script.  Putting it in a separate shell file lets us skip
+-# running autoconf when modifying target-specific information.
+-
+-# This file switches on the shell variable ${target}, and also uses the
+-# following shell variables:
+-#
+-#  with_*		Various variables as set by configure.
+-#
+-#  enable_threads	Either the name, yes or no depending on whether
+-#			threads support was requested.
+-#
+-#  default_use_cxa_atexit
+-#			  The default value for the $enable___cxa_atexit
+-#			variable.  enable___cxa_atexit needs to be set to
+-#			"yes" for the correct operation of C++ destructors
+-#			but it relies upon the presence of a non-standard C
+ #			library	function called	__cxa_atexit.
+ #			  Since not all C libraries provide __cxa_atexit the
+ #			default value of $default_use_cxa_atexit is set to
+@@ -284,6 +245,12 @@ hppa*-*-* | parisc*-*-*)
+ m32r*-*-*)
+         cpu_type=m32r
+         ;;
++dlx*-*-*)
++        cpu_type=dlx
++        ;;
++brownie32*-*-*)
++        cpu_type=brownie32
++        ;;
+ m680[012]0-*-*)
+ 	cpu_type=m68k
+ 	extra_headers=math-68881.h
+@@ -834,6 +801,17 @@ crx-*-elf)
+ 	extra_parts="crtbegin.o crtend.o"
+ 	use_collect2=no
+ 	;;
++brownie32-*-elf)
++        tm_file="dbxelf.h elfos.h ${tm_file} brownie32/elf.h"
++        tmake_file="brownie32/t-elf brownie32/t-brownie32"
++        use_fixproto=yes
++        extra_parts="crt1.o"
++        ;;
++dlx-*-elf)
++        tm_file="elfos.h ${tm_file} dlx/elf.h"
++        tmake_file=dlx/t-dlx
++        use_fixproto=yes
++        ;;
+ fr30-*-elf)
+ 	tm_file="dbxelf.h elfos.h svr4.h ${tm_file}"
+ 	tmake_file=fr30/t-fr30
+Index: gcc/target-def.h
+===================================================================
+RCS file: /home/prj/asip/cvs/gcc422/gcc/target-def.h,v
+retrieving revision 1.1.1.1
+retrieving revision 1.2
+diff -u -p -r1.1.1.1 -r1.2
+--- gcc/target-def.h	14 Nov 2007 09:40:07 -0000	1.1.1.1
++++ gcc/target-def.h	26 Nov 2007 10:10:52 -0000	1.2
+@@ -89,7 +89,6 @@
+ #endif
+ 
+ #define TARGET_ASM_FUNCTION_PROLOGUE default_function_pro_epilogue
+-#define TARGET_ASM_FUNCTION_EPILOGUE default_function_pro_epilogue
+ #define TARGET_ASM_FUNCTION_END_PROLOGUE no_asm_to_stream
+ #define TARGET_ASM_FUNCTION_BEGIN_EPILOGUE no_asm_to_stream
+ 
+Index: gcc/toplev.c
+===================================================================
+RCS file: /home/prj/asip/cvs/gcc422/gcc/toplev.c,v
+retrieving revision 1.1.1.1
+retrieving revision 1.2
+diff -u -p -r1.1.1.1 -r1.2
+--- gcc/toplev.c	14 Nov 2007 09:40:07 -0000	1.1.1.1
++++ gcc/toplev.c	28 Nov 2007 10:18:10 -0000	1.2
+@@ -114,7 +114,8 @@ static void compile_file (void);
+ static int print_single_switch (FILE *, int, int, const char *,
+ 				const char *, const char *,
+ 				const char *, const char *);
+-static void print_switch_values (FILE *, int, int, const char *,
++/*static*/ void
++print_switch_values (FILE *, int, int, const char *,
+ 				 const char *, const char *);
+ 
+ /* Nonzero to dump debug info whilst parsing (-dy option).  */
+@@ -1211,7 +1212,7 @@ print_single_switch (FILE *file, int pos
+    Each line begins with INDENT and ends with TERM.
+    Each switch is separated from the next by SEP.  */
+ 
+-static void
++/*static*/ void
+ print_switch_values (FILE *file, int pos, int max,
+ 		     const char *indent, const char *sep, const char *term)
+ {
+Index: gcc/config/brownie32/b32-lib2.c
+===================================================================
+RCS file: gcc/config/brownie32/b32-lib2.c
+diff -N gcc/config/brownie32/b32-lib2.c
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/b32-lib2.c	26 Nov 2007 10:10:52 -0000	1.1
+@@ -0,0 +1,65 @@
++#include <limits.h>
++
++typedef		 int HItype		__attribute__ ((mode (HI)));
++typedef		 int SItype		__attribute__ ((mode (SI)));
++typedef unsigned int USItype		__attribute__ ((mode (SI)));
++
++typedef int word_type			__attribute__ ((mode (__word__)));
++
++
++static inline USItype
++_udivmodsi4(USItype num, USItype den, word_type modwanted)
++{
++  USItype bit = 1;
++  USItype res = 0;
++  
++  while (den < num && bit && !(den & (1L<<31)))
++    {
++      den <<=1;
++      bit <<=1;
++    }
++  while (bit)
++    {
++      if (num >= den)
++	{
++	  num -= den;
++	  res |= bit;
++	}
++      bit >>=1;
++      den >>=1;
++    }
++  if (modwanted) return num;
++  return res;
++}
++
++
++USItype
++udivmodsi4(USItype num, USItype den, word_type modwanted)
++{
++  if (num > INT_MAX)
++    goto slow;
++  if (den > INT_MAX)
++    goto slow;
++  if (modwanted)
++    return (signed) num % (signed) den;
++  return (signed) num / (signed) den;
++
++ slow:
++  return _udivmodsi4 (num, den, modwanted);
++}
++
++
++
++SItype
++__udivsi3 (SItype a, SItype b)
++{
++  return udivmodsi4 (a, b, 0);
++}
++
++
++
++SItype
++__umodsi3 (SItype a, SItype b)
++{
++  return udivmodsi4 (a, b, 1);
++}
+Index: gcc/config/brownie32/brownie32-protos.h
+===================================================================
+RCS file: gcc/config/brownie32/brownie32-protos.h
+diff -N gcc/config/brownie32/brownie32-protos.h
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/brownie32-protos.h	31 Jan 2008 04:10:23 -0000	1.1
+@@ -0,0 +1,48 @@
++/* Prototypes for brownie32.c functions used in the md file & elsewhere.
++   Copyright (C) 2008 Free Software Foundation, Inc.
++   Contributed by SRA.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 3, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING3.  If not see
++<http://www.gnu.org/licenses/>.  */
++
++
++extern void brownie32_override_options (void);
++
++
++extern rtx brownie32_legitimize_address (rtx, rtx, enum machine_mode);
++
++
++extern rtx 
++     brownie32_function_arg (CUMULATIVE_ARGS *, enum machine_mode, tree, int);
++
++
++
++rtx mips_subword (rtx, int);
++
++/*
++***************************************************************************
++*
++* Comparison stuff.
++* Modeled off of the RS6000 description.
++*
++*/
++
++extern struct rtx_def *dlx_compare_op0, *dlx_compare_op1;
++extern enum machine_mode dlx_compare_mode;
++
++/* so local labels are (fairly) unique. */
++/* Changed by Kenichi Nakamura */
++extern char *fn_minus_ext(void);
+Index: gcc/config/brownie32/brownie32.c
+===================================================================
+RCS file: gcc/config/brownie32/brownie32.c
+diff -N gcc/config/brownie32/brownie32.c
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/brownie32.c	24 Feb 2008 13:56:54 -0000	1.6
+@@ -0,0 +1,2030 @@
++/*
++ *  Brownie32 (Support Routines)
++ *
++ *  Copyright (C) 1994,1995  Aaron Sawdey
++ *  Copyright (C) 2005,2006  Upwind technology, Inc.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ *  Email: sawdey@mountains.ee.umn.edu
++ *
++ *  Snail Mail:
++ *
++ *  Department of Electrical Engineering
++ *  University of Minnesota
++ *  4-174 EE/CSci Building
++ *  200 Union Street S.E.
++ *  Minneapolis, MN 55455
++ *
++ */
++
++#include "config.h"
++#include "system.h"
++#include "coretypes.h"
++#include "tm.h"
++#include <signal.h>
++#include "rtl.h"
++#include "regs.h"
++#include "hard-reg-set.h"
++#include "real.h"
++#include "insn-config.h"
++#include "conditions.h"
++#include "insn-attr.h"
++#include "recog.h"
++#include "toplev.h"
++#include "output.h"
++#include "tree.h"
++#include "function.h"
++#include "expr.h"
++#include "optabs.h"
++#include "flags.h"
++#include "reload.h"
++#include "tm_p.h"
++#include "ggc.h"
++#include "gstab.h"
++#include "hashtab.h"
++#include "debug.h"
++#include "target.h"
++#include "target-def.h"
++#include "integrate.h"
++#include "langhooks.h"
++#include "cfglayout.h"
++#include "sched-int.h"
++#include "tree-gimple.h"
++#include "opts.h"
++
++
++/* Deleted by Kenichi Nakamura
++extern int target_flags;
++*/
++
++#include <stdio.h>
++#include <string.h>
++#include <ctype.h>
++
++/* Added by Kenichi Nakamura */
++//#define DEBUG
++
++/* Added by A.O */
++//#define DEBUG_Gen_condittional
++
++#define REG_NEEDS_SAVE(i) (regs_ever_live[i] && !(call_used_regs[i])&&i!=1)
++
++static void brownie32_init_libfuncs (void);
++
++static void brownie32_setup_incoming_varargs (CUMULATIVE_ARGS *,
++					      enum machine_mode,
++					      tree, int *, int);
++
++void mips_declare_common_object (FILE *stream, const char *name,
++                            const char *init_string,
++                            unsigned HOST_WIDE_INT size,
++                            unsigned int align, bool takes_alignment_p);
++void mips_declare_object (FILE *stream, const char *name, const char *init_string,
++                     const char *final_string, ...);
++void mips_declare_object_name (FILE *stream, const char *name,
++                          tree decl ATTRIBUTE_UNUSED);
++void mips_finish_declare_object (FILE *stream, tree decl, int top_level, int at_end);
++
++
++
++
++char *get_function_name(void)
++{
++  char *kind = "function";
++  if (current_function_decl != 0
++      && TREE_CODE (TREE_TYPE (current_function_decl)) == METHOD_TYPE)
++    kind = "method";
++  
++  if (current_function_decl == NULL)
++    {
++      return "top level";
++    }
++  else
++    {
++      //char *name = (*decl_printable_name) (current_function_decl, &kind);
++      //return name;
++      return lang_hooks.decl_printable_name(current_function_decl, &kind);
++    }
++}
++
++/* from mips.c */
++/* Abort after printing out a specific insn.  */
++
++void abort_with_insn (rtx insn, char *reason)
++{
++  error (reason);
++  debug_rtx (insn);
++  abort ();
++}
++
++void oops_message(char *str)
++{
++  fputs(str,stderr);
++}
++
++/*
++ * for holding comparison operands.
++ */
++rtx dlx_compare_op0, dlx_compare_op1;
++enum machine_mode dlx_compare_mode;
++
++
++int hard_regno_mode_ok_func(int regno, int mode)
++{
++  /* modes that require multiple registers we choose to 
++     always put in an even/odd pair. This is required on
++     the FP side but not on the integer. We do it there anyway
++     just to make things easier.
++   */
++#ifdef DEBUG
++printf("hard_regno_mode_ok_func():");
++switch(mode)
++{
++	case QImode:
++		printf("QImode, regno=%d\n", regno);
++		break;
++	case HImode:
++		printf("HImode, regno=%d\n", regno);
++		break;
++	case DFmode:
++		printf("DFmode, regno=%d\n", regno);
++		break;
++	case SFmode:
++		printf("SFmode, regno=%d\n", regno);
++		break;
++	case DImode:
++		printf("DImode, regno=%d\n", regno);
++		break;
++	case SImode:
++		printf("SImode, regno=%d\n", regno);
++		break;
++	default:
++		printf("other mode, mode=%d, regno=%d\n", mode, regno);
++		break;
++}
++#endif
++
++
++  /* int mode, int register */
++  if(INTEGRAL_MODE_P(mode) && 
++     regno >= FIRST_INT_REG && regno <= LAST_INT_REG)
++	{
++#ifdef DEBUG
++		printf("INTEGRAL_MODE_P(mode)\n");
++#endif
++		return 1;
++	}
++
++#if 000
++  /* float mode and float register */
++  if(FLOAT_MODE_P(mode) &&
++     regno >= FIRST_FP_REG && regno <= LAST_FP_REG)
++	{
++#ifdef DEBUG
++		printf("FLOAT_MODE_P(mode)\n");
++#endif
++		return 1;
++	}
++#endif
++
++  /* allow float values in int regs. */
++  if(mode == SFmode && regno <= LAST_INT_REG)
++	{
++#ifdef DEBUG
++		printf("SF_MODE\n");
++#endif
++		return 1;
++	}
++  /* allow float values in int regs. */
++  if(mode == DFmode && regno <= LAST_INT_REG)
++	{
++#ifdef DEBUG
++		printf("DF_MODE\n");
++#endif
++		return 1;
++	}
++
++#ifdef DEBUG
++  printf("return 0\n");
++#endif
++  return 0;
++}
++
++
++#if 000
++int reg_class_from_letter(int chr)
++{
++  switch(chr)
++    {
++    case 'd':
++      return GR_REGS;
++    case 'f':
++      return FP_REGS;
++    case 'z':
++      return ST_REGS;
++    default:
++      return NO_REGS;
++    }
++}
++#endif /* 000 */
++
++int reg_class_from_letter(int chr)
++{
++  switch (chr)
++    {
++    case 'd':
++      return GR_REGS;
++#if 000
++      /* need following two entries?  */
++    case 'b':
++      return ALL_REGS;
++    case 'y':
++      return GR_REGS;
++#endif /* 000 */
++    default:
++      return NO_REGS;
++    }
++}
++
++
++void print_operand(FILE *stream, rtx x, int letter)
++{
++  int code;
++
++  if(PRINT_OPERAND_PUNCT_VALID_P(letter))
++    {
++      switch(letter)
++        {
++        case '%':
++          putc('%',stream);
++          break;
++        case '(':
++          /* no instructions have been found to fill the slot,
++             or we are not optimizing. */
++/* Deleted by Kenichi Nakamura
++          if(dbr_sequence_length() == 0)
++            {
++              if(!optimize)
++                fputs("\n\tnop\t; delay slot nop",stream);
++              else
++                fputs("\n\tnop\t; not filled.", stream);
++            }
++          else
++            {
++              fputs("\n\t\t;; filled delay slot:",stream);
++            }
++ */
++         break;
++        }
++      return;
++    }
++  if(!x)
++    {
++      error("PRINT_OPERAND x==NULL");
++      return;
++    }
++  code = GET_CODE(x);
++
++  if(letter == 'C')
++    { /* conditional */
++      char *scode;
++
++      switch(code)
++        {
++
++        case EQ:        fputs("eeq",stream); break;
++        case NE:        fputs("eneq",stream); break;
++        case GT:        fputs("elt",stream); break;
++        case LT:        fputs("elt",stream); break;
++        case LTU:       fputs("eltu",stream); break;
++
++        case GE: 
++        case LE: 
++        case GTU: 
++        case GEU: 
++        case LEU: 
++	  abort_with_insn (x, "PRINT_OPERAND, in %%C, unnormal code");
++	  break;
++
++        default:
++          abort_with_insn (x, "PRINT_OPERAND, illegal insn for %%C");
++        }
++    }
++  else if(letter == 'N')
++    { /* reverse conditional */
++      switch(code)
++        {
++        case EQ:        fputs("eneq",stream); break;
++        case NE:        fputs("eeq",stream); break;
++        case GT:        fputs("elt",stream); break;   //0321
++        case GE:        fputs("elt",stream); break;
++        case LT:        fputs("elt",stream); break;   //0321
++        case LE:        fputs("elt",stream); break;    //0321  
++        case GTU:       fputs("eltu",stream); break;    //0321
++        case GEU:       fputs("eltu",stream); break;
++        case LTU:       fputs("eltu",stream); break;
++        case LEU:       fputs("eltu",stream); break;    //0321
++
++        default:
++          abort_with_insn (x, "PRINT_OPERAND, illegal insn for %%N");
++        }
++    }
++  else if(letter == 'H') /* print upper 16 bits. */
++    { 
++      int iv = ((unsigned)(INTVAL(x))>>16)&0xffff;
++      if(iv > 0x7fff) iv |= ((-1) ^ 0xffff);
++      fprintf(stream,"#%d",iv);
++    }
++  else if(letter == 'L') /* print lower 16 bits. */
++    { 
++      int iv = INTVAL(x)&0xffff;
++      /* if(iv > 0x7fff) iv |= ((-1) ^ 0xffff); */
++      fprintf(stream,"#%d",iv);
++    }
++  else if(letter == 'S') /* print SYMBOL_REF */
++    {
++      assemble_name(stream,XSTR(XEXP(x,0),0));
++    }
++  else if(code == REG)
++    {
++      int regnum = REGNO(x);
++//      if(regnum != FP_STATUS_REG)       /* don't print this one. */
++        fputs(reg_names[regnum],stream);
++    }
++  else if(letter == 'U') /* Unsigned int */
++    {
++      unsigned int iv = (unsigned)(INTVAL(x));
++      iv &= 0xffff;
++      fprintf(stream,"#%d",iv);
++    }
++  else if(letter == 'G') /* siGned int */
++    {
++      int iv = INTVAL(x);
++      fprintf(stream,"#%d",iv);
++    }
++  else if(code == CONST_INT)
++    {
++      fprintf(stream,"#0x%x",(INTVAL(x))&0xffff);
++    }
++  else if(code == MEM)
++    {
++      rtx adr = XEXP(x, 0);
++      code = GET_CODE(adr);
++      switch(code)
++        {
++        case REG:
++          fprintf(stream,"(%s)",reg_names[REGNO(adr)]);
++          break;
++        case PLUS:
++          { rtx reg,offs;
++            reg = XEXP(adr,0);
++            offs = XEXP(adr,1);
++            if(GET_CODE(reg) != REG)
++              {
++                reg = XEXP(adr,1);
++                offs = XEXP(adr,0);
++              }
++            if(GET_CODE(reg) != REG || GET_CODE(offs) != CONST_INT)
++              {
++                abort_with_insn (x, "PRINT_OPERAND, Can't figure out adr.");
++              }
++            fprintf(stream,"%d(%s)",INTVAL(offs),reg_names[REGNO(reg)]);
++            break;
++          }
++        case CONST_INT:
++          fprintf(stream,"%d(r0)",INTVAL(adr));
++          break;
++                
++        default:
++          output_address(x);
++          break;
++        }
++    }
++  else
++    {
++      output_addr_const(stream, x);
++    }
++}
++
++void print_operand_address(FILE *stream, rtx x)
++{
++  if (!x)
++    {
++      error("PRINT_OPERAND_ADDRESS, null pointer");
++    }
++  else
++    {
++      switch(GET_CODE(x))
++        {
++        case SYMBOL_REF:
++          fputs(XSTR(x,0),stream);
++          break;
++        default:
++          abort_with_insn(x,"PRINT_OPERAND_ADDRESS, illegal insn #1");
++          break;
++        }
++    }
++      
++}
++
++int print_operand_punct_valid_p(int code)
++{
++  switch(code)
++    {
++    case '(':   /* idea taken from sparc; output nop for %( if
++                   not optimizing or the slot is not filled. */
++    case '%': 
++      return 1;
++    }
++  return 0;
++}
++
++
++int gen_call_value_1(rtx operands[])
++{
++  rtx result = operands[0];
++  rtx func = operands[1];
++  rtx stacksize = operands[2];
++  int mode = GET_MODE(result);
++
++#ifdef DEBUG_Gen_condittional
++  printf ("gen_call_value_1(rtx operands[] mode=%d",mode);
++#endif
++
++  switch(mode)
++    {
++/*
++ [(set (reg:SI 1)
++                  (call (match_operand 0 "sym_ref_mem_operand" "")
++                        (match_operand 1 "" "i")))]
++    HImode:
++    QImode:
++      printf("Subreg in gcv1.\n");
++      emit_call_insn(gen_rtx_SET(mode,
++			     gen_rtx_SUBREG(mode,result,0),
++			     gen_rtx_CALL(VOIDmode,func,stacksize)));
++      break;
++*/
++
++    default:
++      emit_call_insn(gen_rtx_PARALLEL(VOIDmode,
++		       gen_rtvec(2,
++				 gen_rtx_SET(mode,result,
++					 gen_rtx_CALL(VOIDmode,func,
++						 stacksize)),
++				 gen_rtx_CLOBBER(VOIDmode,
++					 gen_rtx_REG(SImode,3)))));
++      break;
++
++    }
++
++  return 0;
++}
++/*
++ * operands[0] will be the branch target.
++ * test will be the comparison type.
++ * dlx_compare_mode is SImode, SFmode, or DFmode
++ * dlx_compare_op0 and dlx_compare_op1 are the things to be 
++ *  compared.
++ *
++ * This routine has to generate a compare and a branch rtx.
++ *
++ */
++//int za1;
++#define Dprintf //printf("n=%02d ",1+za1++);printf
++//#define DEBUG_Gen_condittional 1
++int gen_conditional_branch(rtx operands[], enum rtx_code test)
++{
++  rtx target = operands[0];
++  rtx cres;
++  rtx tmp;
++
++#ifdef DEBUG_Gen_condittional
++  printf("gen_conditional_branch()\n"); 
++  printf("dlx_compare_mode=%x\n", dlx_compare_mode); 
++#endif
++
++  switch(dlx_compare_mode)
++    {
++    case SFmode:
++         cres = gen_reg_rtx(SFmode);
++
++//	 if(GET_CODE(dlx_compare_op0) != REG)
++            dlx_compare_op0 = force_reg(dlx_compare_mode,dlx_compare_op0);
++
++//   if(GET_CODE(dlx_compare_op1) != REG)
++            dlx_compare_op1 = force_reg(dlx_compare_mode,dlx_compare_op1);
++
++      /* generate the compare */
++      emit_insn(gen_rtx_SET(SFmode,cres,
++                       gen_rtx_SET(dlx_compare_mode,
++                               dlx_compare_op0,dlx_compare_op1)));
++      /* generate the branch. */
++      emit_jump_insn(gen_rtx_SET(VOIDmode,pc_rtx,
++                             gen_rtx_SET(VOIDmode,
++                                     gen_rtx_MEM(CCmode,const0_rtx),
++                                     gen_rtx_MEM(VOIDmode,operands[0]) )));
++
++      break;
++    case DFmode:
++      /* floating point branch:
++         Generate XXf or XXd instruction RTL,
++         then generate bfpt/bfpf RTL. */
++      /* We need the fp condition code register for this;
++         so we just generate the RTL for the hard register.
++         I tried using gen_reg_rtx(CCFPmode) but I got an 
++         error (something having to do with an illegal spilled
++         register). It should work fine this way anyway; there's
++         no point in worrying about allocating the FP status reg
++         since there is only one. */
++
++         cres = gen_reg_rtx(DFmode);
++
++//         if(GET_CODE(dlx_compare_op0) != REG)
++            dlx_compare_op0 = force_reg(dlx_compare_mode,dlx_compare_op0);
++
++//         if(GET_CODE(dlx_compare_op1) != REG)
++            dlx_compare_op1 = force_reg(dlx_compare_mode,dlx_compare_op1);
++
++      /* generate the compare */
++      emit_insn(gen_rtx_SET(DFmode,cres,
++                       gen_rtx_SET(dlx_compare_mode,
++                               dlx_compare_op0,dlx_compare_op1)));
++      /* generate the branch. */
++      emit_jump_insn(gen_rtx_SET(VOIDmode,pc_rtx,
++                             gen_rtx_SET(VOIDmode,
++                                     gen_rtx_MEM(CCmode,const0_rtx),
++                                     gen_rtx_MEM(VOIDmode,operands[0]) )));
++
++/*
++   cres = gen_rtx_REG(CCFPmode,FP_STATUS_REG);
++   cres = gen_reg_rtx(DFmode);
++*/
++
++      /* Ensure both operands of the compare are in registers. */
++/*
++     if(GET_CODE(dlx_compare_op0) != REG)
++        dlx_compare_op0 = force_reg(dlx_compare_mode,dlx_compare_op0);
++      if(GET_CODE(dlx_compare_op1) != REG)
++        dlx_compare_op1 = force_reg(dlx_compare_mode,dlx_compare_op1);
++*/
++ 
++      /* generate the compare */
++/*
++      emit_insn(gen_rtx_SET(DFmode,cres,
++                       gen_rtx_SET(dlx_compare_mode,
++                               dlx_compare_op0,dlx_compare_op1)));
++*/
++
++      /* generate the branch. */
++/*
++      emit_jump_insn(gen_rtx_SET(VOIDmode,pc_rtx,
++                             gen_rtx_SET(VOIDmode,
++                                     gen_rtx_MEM(CCFPmode,const0_rtx),
++                                     gen_rtx_MEM(VOIDmode,operands[0]) )));
++*/
++      break;
++
++    case SImode:
++
++      /* generate a sXX instruction. */
++      /* RTX is:
++  (set (match_operand:SI 0 "register_operand" "=d,d")
++         (eq:SI (match_operand:SI 1 "register_operand" "d,d")
++                (match_operand:SI 2 "nonmemory_operand" "d,I")))
++       */
++      /* ok, we need a pseudo register to store the 
++         comparison result in: */
++      cres = gen_reg_rtx(SImode);
++
++      /* check if operand 1 is an integer that is too big;
++         move it into a register if it is. */
++//      if(GET_CODE(dlx_compare_op1) == CONST_INT)
++              dlx_compare_op1 = force_reg(SImode, dlx_compare_op1);
++//      if(GET_CODE(dlx_compare_op0) == CONST_INT)
++              dlx_compare_op0 = force_reg(SImode, dlx_compare_op0);
++
++
++/* Deleted Amane Otake AO_20061215 */
++      /* emit the set instruction. */
++/*
++      tmp = gen_rtx_SET(SImode, cres, 
++                    gen_rtx_SET(SImode, dlx_compare_op0, dlx_compare_op1)); 
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_EQ(SImode, dlx_compare_op0, dlx_compare_op1));
++*/
++
++/*
++  [(set (pc) (if_then_else (eq:SI (const_int 0)
++                                  (match_operand:SI 0 "register_operand"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++*/
++
++/* Modified Amane Otake AO_20061215 */
++      /* emit the branch instruction. */
++/*
++      tmp = gen_rtx_SET(VOIDmode, pc_rtx, 
++                    gen_rtx_SET(VOIDmode,
++                            gen_rtx_SET(SImode, const0_rtx, cres),
++                            gen_rtx_REG(VOIDmode,operands[0]))); 
++*/
++
++/* Modified Amane Otake AO_20061215 */
++      if ( test == EQ)
++      {
++Dprintf("EQ(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_EQ (SImode, dlx_compare_op0, dlx_compare_op1));  //EQ:Error(insn) MINUS:OK NE:Error LEUdelete&EQ:Error LT:x LTU:ok
++
++
++      emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_NE(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++      }
++      else if( test == NE)
++     {
++Dprintf("NE(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_NE (SImode, dlx_compare_op0, dlx_compare_op1));
++
++
++      emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_NE(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++      else if( test == LT)
++     {
++Dprintf("LT(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LT (SImode, dlx_compare_op0, dlx_compare_op1));
++
++
++      emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_NE(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++     else if( test == LE)
++     {
++Dprintf("LE(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LT (SImode, dlx_compare_op1, dlx_compare_op0));
++
++
++      emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                          gen_rtx_EQ(SImode, const0_rtx, cres),
++                          gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++      else if( test == GE)
++     {
++Dprintf("GE(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LT (SImode, dlx_compare_op0, dlx_compare_op1));
++
++
++      emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_EQ(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++      else if( test == GT)
++     {
++Dprintf("GT(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LT (SImode, dlx_compare_op1, dlx_compare_op0));
++
++
++      emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_NE(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++     else if( test == LTU)
++     {
++Dprintf("LTU(%x)\n",test);
++      /* emit the set instruction */
++        tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LTU (SImode, dlx_compare_op0, dlx_compare_op1));
++        emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_NE(SImode, const0_rtx, cres),		// C.Katano Dec-15-06 gen_rtx_EQ -> gen_rtx_NE
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++     else if( test == LEU)
++     {
++Dprintf("LEU(%x)\n",test);
++/* "<" */
++      /* emit the set instruction */
++        tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LTU (SImode, dlx_compare_op1, dlx_compare_op0));
++        emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_EQ(SImode, const0_rtx, cres),              // C.Katano Dec-15-06 gen_rtx_EQ -> gen_rtx_NE
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++     else if( test == GEU)
++     {
++Dprintf("GEU(%x)\n",test);
++      /* emit the set instruction */
++        tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LTU (SImode, dlx_compare_op0, dlx_compare_op1));
++        emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_EQ(SImode, const0_rtx, cres),              // C.Katano Dec-15-06 gen_rtx_NE -> gen_rtx_EQ
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++     else if( test == GTU)
++     {
++Dprintf("GTU(%x)\n",test);
++      /* emit the set instruction */
++      /* C.Katano Dec-15-06 2nd,3rd param change (OLD:gen_rtx_LTU(SImode, dlx_compare_op0, dlx_compare_op1));) */
++        tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_LTU (SImode, dlx_compare_op1, dlx_compare_op0));
++
++
++        emit_insn( tmp);
++
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_NE(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++     else 
++     {
++Dprintf("??(%x)\n",test);
++      /* emit the set instruction */
++      tmp = gen_rtx_SET(SImode, cres,
++                    gen_rtx_MINUS (SImode, dlx_compare_op0, dlx_compare_op1));
++
++
++      emit_insn( tmp);
++      /* emit the branch instruction. */
++        tmp = gen_rtx_SET( VOIDmode, pc_rtx,
++                    gen_rtx_IF_THEN_ELSE(VOIDmode,
++                            gen_rtx_EQ(SImode, const0_rtx, cres),
++                            gen_rtx_LABEL_REF(Pmode,operands[0]), pc_rtx));
++         emit_jump_insn( tmp);
++     }
++      break;
++    }
++}
++
++/*
++ * Set up stack and frame pointers, and prepare
++ * for function entry.
++ *
++ * Stack map:
++ *
++ * incoming args
++ *                      <--------------------------- new frame pointer
++ * saved frame pointer          4 bytes
++ * saved return addr            4 bytes
++ *
++ * local variables:             size rounded up to a multiple of 4.
++ *
++ * save caller regs area        (4*n_regs_to_save)
++ * 
++ *
++ */
++
++/*
++ * Used for internal labels.
++ * Characters not in [a-zA-Z0-9] are mapped to "_".
++ */
++static char fn_minus_ext_buf[200];
++
++char *fn_minus_ext(void)
++{
++  char *x;
++  if(main_input_filename == NULL) return "";
++  strcpy(fn_minus_ext_buf,main_input_filename);
++  x = strrchr(fn_minus_ext_buf,'.');
++  if(x != NULL) *x = '\0';
++
++  for(x = fn_minus_ext_buf ; *x ; x++) {
++    if(!isalnum(*x)) *x = '_';
++  }
++  return fn_minus_ext_buf;
++}
++
++asm_output_ascii(FILE *stream, unsigned char *ptr, int len)
++{ 
++  int i,p;
++  unsigned int c;
++  fputs("\t.ascii \"",stream);
++  i = 0;
++  p = 0;
++  do 
++    { 
++      c = ptr[i++];
++      if(c < 0x80 && isprint(c)) {
++	switch(c) {
++	case '\"': fputs("\\\"",stream); p+=2; break;
++	case '\'': fputs("\\\'",stream); p+=2; break;
++	case '\\': fputs("\\\\",stream); p+=2; break;
++
++	default:
++	  fputc(c,stream); p++;
++	}
++      } else {
++	switch(c) {
++	case '\a': fputs("\\a",stream); p+=2; break;
++	case '\b': fputs("\\b",stream); p+=2; break;
++	case '\f': fputs("\\f",stream); p+=2; break;
++	case '\n': fputs("\\n",stream); p+=2; break;
++	case '\r': fputs("\\r",stream); p+=2; break;
++	case '\t': fputs("\\t",stream); p+=2; break;
++	case '\v': fputs("\\v",stream); p+=2; break;
++	default:
++	  fprintf(stream,"\\%03o",c); 
++	  p+=4; 
++	  break;
++	}
++      }
++      if(p >= 70 && i < len) {
++	fputs("\"\n\t.ascii \"",stream);
++	p = 0;
++      }
++    } while(i < len); 
++  fputs("\"\n",stream);
++}
++
++/* short cut */
++#define SP reg_names[STACK_POINTER_REGNUM]
++#define FP reg_names[FRAME_POINTER_REGNUM]
++#define A_reg reg_names[B32_A_REGNUM]
++
++function_prologue (FILE *file, int size)
++{
++  int reg_so;
++  int local_space;
++  int i;
++  int stkoff;
++  int n_regs_to_save;
++  char *name = get_function_name();
++  int is_main = 0;
++
++#ifdef DEBUG_Gen_condittional
++  printf( "A function_prologue (FILE *file, int size)\n" );
++#endif
++
++  /* Save arg registers to the stack if necessary.  */
++  if (TARGET_QUICKCALL && current_function_args_info.anonymous_args)
++    {
++      int offset;
++      for (i = GP_ARG_FIRST, offset = 0; i <= GP_ARG_LAST; i++, offset += 4)
++	fprintf (file, "\tsw\t%d(%s),r%d\t; push register for parm.\n",
++		 offset, SP, i);
++    }
++
++  if(!strcmp("main",name)) is_main = 1;
++
++  stkoff = 0;
++  n_regs_to_save = 0;
++
++  if(!is_main) {
++    for(i = FIRST_INT_REG; i <= LAST_INT_REG ; i++)
++      if(REG_NEEDS_SAVE(i)) {
++	stkoff += 4;
++	n_regs_to_save++;
++      }
++      
++    stkoff = (stkoff+7)&(~7);
++  }
++
++  /*  local_space = size + 8 + stkoff; */
++  /* keep register save area for var. args.  saved code are in callee.  */
++  local_space = size + 8 + stkoff + current_function_outgoing_args_size;
++
++  fprintf(file,";  Function '%s'; %d bytes of locals, %d regs to save, %d byte of out. args. size.\n",
++          name, size, n_regs_to_save, current_function_outgoing_args_size);
++
++  fprintf (file, "\tsw\t-4(%s),r3\t; push LinkRegister(r3)\n",  SP);
++  fprintf (file, "\tsw\t-8(%s),%s\t; push FrameRegister(%s)\n",  SP, FP, FP);
++  fprintf (file, "\taddi\t%s, %s,#-8\t; FramePtr = StackPtr-8\n", FP, SP);
++  if (CONST_OK_FOR_LETTER_P (local_space, 'I'))
++    fprintf (file, "\taddi\t%s,%s,#-%d\t; alloc local storage\n", SP, SP,
++            local_space);
++  else
++    {
++      /*
++       addi r6, r0, #uh
++       lsoi r6,r6, #lh
++       sub  r5, r5, r6
++       */
++      int lh = local_space & 0xffff;
++      int uh = ((unsigned) local_space >> 16) & 0xffff;
++      if (uh > 0x7fff)
++        uh |= ((-1) ^ 0xffff);
++      fprintf (file, " addi    %s, r0, #%d\n", A_reg, uh);
++      fprintf (file, " lsoi    %s, %s, #%d\n", A_reg, A_reg, lh);
++      fprintf (file, " sub     %s, %s, %s\n", SP, SP, A_reg);
++    }
++
++  reg_so = current_function_outgoing_args_size;  /* start just above out going args. area */
++
++  if(!is_main)
++    {
++      for(i = FIRST_INT_REG ; i <= LAST_INT_REG ; i++)
++        {
++          if(REG_NEEDS_SAVE(i))
++            {
++	      fprintf (file, "\tsw\t%d(%s),%s\t; save r(%s)\n",
++		       reg_so, SP, reg_names[i], reg_names[i]);
++              reg_so += 4;
++            }
++        }
++    }
++}
++
++int log_of_two(int x)
++{
++  int y;
++
++  x >>= 1;
++  for(y=0; x; x>>=1, y++);
++
++  return y;
++}
++
++function_epilogue (FILE *file, int size)
++{
++  int i;
++  int reg_so;
++  char *name = get_function_name();
++  int is_main = 0;
++
++#ifdef DEBUG_Gen_condittional
++	printf( "A function_epilogue (FILE *file, int size)\n");
++#endif
++
++  if(!strcmp("main",name)) is_main = 1;
++
++  reg_so = current_function_outgoing_args_size;  /* start just above out going args. area */
++
++  if(!is_main) 
++    {
++      for(i = FIRST_INT_REG ; i <= LAST_INT_REG ; i++)
++        {
++          if(REG_NEEDS_SAVE(i))
++            {
++              fprintf (file, "\tlw\t%s,%d(%s)\t; restore r(%s).\n",
++		       reg_names[i], reg_so, SP, reg_names[i]);
++              reg_so += 4;
++            }
++        }
++
++        fputs("\tnop\n",file);
++
++    }
++#if 000
++      fputs("\tlw\tr3,4(r5)\t; pop LinkRegister(r3)\n",file);
++      fputs("\taddi\tr6,r5,#8\t; StackPointer = FramePointer+8\n",file);
++      fputs("\tlw\tr5,(r5)\t\t; restore FramePointer\n",file);
++      fputs("\tjpr\tr3\t\t; return\n",file);
++#endif /* 000 */
++      fprintf (file, "\tlw\tr3,4(%s)\t; pop LinkRegister(r3)\n", FP);
++      fprintf (file, "\taddi\t%s,%s,#8\t; StackPointer = FramePointer+8\n",
++	       SP, FP);
++      fprintf (file, "\tlw\t%s,(%s)\t\t; restore FramePointer\n", FP, FP);
++      fputs("\tjpr\tr3\t\t; return\n",file);
++
++#ifdef DEBUG_Gen_condittional
++	printf( "A function_epilogue (FILE *file, int size)\n");
++#endif
++}
++
++
++/* Length of line when printing switch values.  */
++#define MAX_LINE 75
++
++#undef TARGET_ASM_FILE_START
++#define TARGET_ASM_FILE_START asm_file_start
++
++asm_file_start()
++{
++#ifdef NO_LOADER 
++  fputs(".data 0x100\n.text 0x8000\n", asm_out_file);
++#endif
++  print_switch_values (asm_out_file, 0, MAX_LINE, ";", " ", "\n");
++}
++
++struct traptab_s {
++  char *name;
++  int num;
++} traptab[] = {
++  { "_exit",   0 },
++  { "_open",   1 },
++  { "_close",  2 },
++  { "_read",   3 },
++  { "_write",  4 },
++  { "_printf", 5 },
++  { "_sqrt",   29 },
++  { NULL,      0 }};
++
++asm_file_end(FILE *file)
++{
++  int i;
++
++#ifdef NO_LOADER
++  text_section();
++
++  i = 0;
++  while(traptab[i].name != NULL)
++    {
++      output_trap_def(file,traptab[i].name,traptab[i].num);
++      i++;
++    }
++#endif
++}
++
++output_trap_def(FILE *file, char *name, int num)
++{
++  fprintf(file,".global %s\n%s:\t",name,name);
++  fprintf(file,"\ttrap\t#%d\n",num);
++  fputs("\tjr\tr3\n",file);
++  fputs("\tnop\n\n",file);
++}
++
++#undef TARGET_INIT_LIBFUNCS
++#define TARGET_INIT_LIBFUNCS brownie32_init_libfuncs
++
++#undef TARGET_SETUP_INCOMING_VARARGS
++#define TARGET_SETUP_INCOMING_VARARGS brownie32_setup_incoming_varargs
++
++
++#include "config/gofast.h"
++
++static void
++brownie32_init_libfuncs (void)
++{
++#ifdef DEBUG
++       printf("brownie32_init_libfuncs()\n");
++#endif
++#if 0
++       set_optab_libfunc (add_optab, SFmode, "__b32_addsf3");
++       set_optab_libfunc (sub_optab, SFmode, "__b32_subsf3");
++       set_optab_libfunc (smul_optab, SFmode, "__b32_mulsf3");
++       set_optab_libfunc (sdiv_optab, SFmode, "__b32_divsf3");
++       set_optab_libfunc (cmp_optab, SImode, "__b32_cmpsi2");
++       set_optab_libfunc (ucmp_optab, SImode, "__b32_ucmpsi2");
++#endif
++}
++
++/* Implement TARGET_HANDLE_OPTION.  */
++
++static int
++brownie32_handle_option (size_t code,
++			 const char *arg, int value ATTRIBUTE_UNUSED)
++{
++  switch (code)
++    {
++    case OPT_mquickcall:
++      target_flags |= MASK_QUICKCALL;
++	return 1;
++
++    case OPT_mno_quickcall:
++      target_flags &= ~MASK_QUICKCALL;
++	return 1;
++
++    default:
++      return 1;
++    }
++}
++
++
++#undef TARGET_DEFAULT_TARGET_FLAGS
++#define TARGET_DEFAULT_TARGET_FLAGS         (MASK_QUICKCALL)
++
++
++#undef TARGET_HANDLE_OPTION
++#define TARGET_HANDLE_OPTION brownie32_handle_option
++
++
++
++#undef  TARGET_ASM_FUNCTION_PROLOGUE
++#define TARGET_ASM_FUNCTION_PROLOGUE function_prologue
++#undef  TARGET_ASM_FUNCTION_EPILOGUE
++#define TARGET_ASM_FUNCTION_EPILOGUE function_epilogue
++
++
++struct gcc_target targetm = TARGET_INITIALIZER;
++
++/* Declare a common object of SIZE bytes using asm directive INIT_STRING.
++   NAME is the name of the object and ALIGN is the required alignment
++   in bytes.  TAKES_ALIGNMENT_P is true if the directive takes a third
++   alignment argument.  */
++
++void mips_declare_common_object (FILE *stream, const char *name,
++                            const char *init_string,
++                            unsigned HOST_WIDE_INT size,
++                            unsigned int align, bool takes_alignment_p)
++{
++  if (!takes_alignment_p)
++    {
++      size += (align / BITS_PER_UNIT) - 1;
++      size -= size % (align / BITS_PER_UNIT);
++      mips_declare_object (stream, name, init_string,
++                           "," HOST_WIDE_INT_PRINT_UNSIGNED "\n", size);
++    }
++  else
++    mips_declare_object (stream, name, init_string,
++                         "," HOST_WIDE_INT_PRINT_UNSIGNED ",%u\n",
++                         size, align / BITS_PER_UNIT);
++}
++
++/* Emit either a label, .comm, or .lcomm directive.  When using assembler
++   macros, mark the symbol as written so that mips_file_end won't emit an
++   .extern for it.  STREAM is the output file, NAME is the name of the
++   symbol, INIT_STRING is the string that should be written before the
++   symbol and FINAL_STRING is the string that should be written after it.
++   FINAL_STRING is a printf() format that consumes the remaining arguments.  */
++
++void mips_declare_object (FILE *stream, const char *name, const char *init_string,
++                     const char *final_string, ...)
++{
++  va_list ap;
++
++  fputs (init_string, stream);
++  assemble_name (stream, name);
++  va_start (ap, final_string);
++  vfprintf (stream, final_string, ap);
++  va_end (ap);
++
++  if (!TARGET_EXPLICIT_RELOCS)
++    {
++      tree name_tree = get_identifier (name);
++      TREE_ASM_WRITTEN (name_tree) = 1;
++    }
++}
++
++#ifdef ASM_OUTPUT_SIZE_DIRECTIVE
++extern int size_directive_output;
++
++/* Implement ASM_DECLARE_OBJECT_NAME.  This is like most of the standard ELF
++   definitions except that it uses mips_declare_object() to emit the label.  */
++
++void mips_declare_object_name (FILE *stream, const char *name,
++                          tree decl ATTRIBUTE_UNUSED)
++{
++#ifdef ASM_OUTPUT_TYPE_DIRECTIVE
++  ASM_OUTPUT_TYPE_DIRECTIVE (stream, name, "object");
++#endif
++
++  size_directive_output = 0;
++  if (!flag_inhibit_size_directive && DECL_SIZE (decl))
++    {
++      HOST_WIDE_INT size;
++
++      size_directive_output = 1;
++      size = int_size_in_bytes (TREE_TYPE (decl));
++      ASM_OUTPUT_SIZE_DIRECTIVE (stream, name, size);
++    }
++
++  mips_declare_object (stream, name, "", ":\n", 0);
++}
++
++/* Implement ASM_FINISH_DECLARE_OBJECT.  This is generic ELF stuff.  */
++
++void mips_finish_declare_object (FILE *stream, tree decl, int top_level, int at_end)
++{
++  const char *name;
++
++  name = XSTR (XEXP (DECL_RTL (decl), 0), 0);
++  if (!flag_inhibit_size_directive
++      && DECL_SIZE (decl) != 0
++      && !at_end && top_level
++      && DECL_INITIAL (decl) == error_mark_node
++      && !size_directive_output)
++    {
++      HOST_WIDE_INT size;
++
++      size_directive_output = 1;
++      size = int_size_in_bytes (TREE_TYPE (decl));
++      ASM_OUTPUT_SIZE_DIRECTIVE (stream, name, size);
++    }
++}
++
++#if 0 // 20070409
++/* function for FUNCTION_ARG(cum,mode,type,named) from "stormy16" */
++rtx
++brownie32_function_arg (CUMULATIVE_ARGS cum, enum machine_mode mode,
++			tree type, int named ATTRIBUTE_UNUSED, int arg_num)
++{
++  
++  if (mode == VOIDmode)
++    return const0_rtx;
++
++  if (    targetm.calls.must_pass_in_stack (mode, type) 
++       || cum + BROWNIE32_WORD_SIZE (type, mode) > NUM_ARGUMENT_REGISTERS
++       || arg_num > 8 ) /* if number of argment is over 8, all arguments are passed in stack */
++    return 0;
++
++//    return gen_rtx_REG (mode, cum+2);
++    return gen_rtx_REG (mode, cum);
++}
++
++
++/* function for FUNCTION_ARG_ADVANCE(cum,mode,type,named) from "stormy16" */
++
++/* Return an updated summarizer variable CUM to advance past an
++   argument in the argument list.  The values MODE, TYPE and NAMED
++   describe that argument.  Once this is done, the variable CUM is
++   suitable for analyzing the *following* argument with
++   `FUNCTION_ARG', etc.
++ */
++CUMULATIVE_ARGS
++brownie32_function_arg_advance (CUMULATIVE_ARGS cum, enum machine_mode mode,
++				tree type, int named ATTRIBUTE_UNUSED)
++{
++  /* If an argument would otherwise be passed partially in registers,
++     and partially on the stack, the whole of it is passed on the
++     stack.  */
++
++  if (cum < NUM_ARGUMENT_REGISTERS
++      && cum + BROWNIE32_WORD_SIZE (type, mode) > NUM_ARGUMENT_REGISTERS)
++      cum = NUM_ARGUMENT_REGISTERS;
++  
++  cum += BROWNIE32_WORD_SIZE (type, mode);
++
++  return cum;
++}
++
++/* Compute the number of word sized registers needed to hold a
++   function argument of mode INT_MODE and tree type TYPE.  from fr30 */
++int
++brownie32_num_arg_regs (enum machine_mode mode, tree type)
++{
++  int size;
++
++  if (targetm.calls.must_pass_in_stack (mode, type))
++    return 0;
++
++  if (type && mode == BLKmode)
++    size = int_size_in_bytes (type);
++  else
++    size = GET_MODE_SIZE (mode);
++
++  return (size + UNITS_PER_WORD - 1) / UNITS_PER_WORD;
++}
++#endif //20070409
++#endif /* ASM_OUTPUT_SIZE_DIRECTIVE */
++
++
++/* Determine where to put an argument to a function.
++   Value is zero to push the argument on the stack,
++   or a hard register in which to store the argument.
++
++   MODE is the argument's machine mode.
++   TYPE is the data type of the argument (as a tree).
++    This is null for libcalls where that information may
++    not be available.
++   CUM is a variable of type CUMULATIVE_ARGS which gives info about
++    the preceding args and about the function being called.
++   NAMED is nonzero if this argument is a named parameter
++    (otherwise it is an extra parameter matching an ellipsis).  */
++
++rtx
++brownie32_function_arg (cum, mode, type, named)
++     CUMULATIVE_ARGS *cum;
++     enum machine_mode mode;
++     tree type;
++     int named;
++
++{
++  rtx result = 0;
++  int size, align;
++  int regpass = 0;     /* # of register for function arg. passing.  */
++
++#if 0
++  /* 1. when varargs arg, arg should pushed.  */
++  if (!named)
++    return 0;
++#endif
++
++  if (TARGET_QUICKCALL)
++    regpass = 8;
++
++  /* 2. size as its mode */
++  if (mode == BLKmode)
++    {
++      if (regpass)
++	{
++	  int size = int_size_in_bytes (type);
++	  if (((size + cum->nbytes) <= (regpass * UNITS_PER_WORD))
++	      && (((cum->nbytes / UNITS_PER_WORD) <= (regpass - 1))))
++	    return gen_rtx_REG (mode,
++				GP_ARG_FIRST + (cum->nbytes / UNITS_PER_WORD));
++	}
++      return 0; /* stack passing for structure */
++    }
++  else
++    size = GET_MODE_SIZE (mode);
++
++  /* align and calc cumutive arg size.  */
++  if (type)
++    align = TYPE_ALIGN (type) / BITS_PER_UNIT;
++  else
++    align = size;
++
++#if 0
++  cum->nbytes = (cum->nbytes + align - 1) & ~(align - 1);
++#endif
++  cum->nbytes = ((GP_ARG_FIRST * 4 + cum->nbytes + align - 1) & ~(align - 1))
++      - (GP_ARG_FIRST * 4);
++
++  /* 3. when cumutive arg size is greater than regpass words,
++   *    it's stack passing.
++   */
++  if (cum->nbytes > (regpass * UNITS_PER_WORD))
++    return 0;
++
++  if ((type == NULL_TREE) && (cum->nbytes + size) > (regpass * UNITS_PER_WORD))
++    return 0;
++
++#if 0
++  /* 4. when DF mode, cumutive arg size is greater than 0,
++        it's stack passing.  */
++  if (mode == DFmode)
++    {
++      if (cum->nbytes > 0)
++	return 0;		
++    }
++#endif /* 0 */
++
++  /* 5. select the register number as cumutive arg size.  */
++
++  if (regpass == 0)
++    return result;
++
++  switch (cum->nbytes / UNITS_PER_WORD)
++    {
++    case 0:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 0);
++      break;
++    case 1:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 1);
++      break;
++    case 2:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 2);
++      break;
++    case 3:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 3);
++      break;
++   case 4:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 4);
++      break;
++    case 5:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 5);
++      break;
++    case 6:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 6);
++      break;
++    case 7:
++      result = gen_rtx_REG (mode, GP_ARG_FIRST + 7);
++      break;
++    default:
++      result = 0;
++    }
++  return result;
++}
++
++
++#if 000
++//--------------- Double move exe C.katano 070621 -->
++/* Return one word of double-word value OP, taking into account the fixed
++   endianness of certain registers.  HIGH_P is true to select the high part,
++   false to select the low part.  */
++//-- results
++#define TARGET_BIG_ENDIAN 1
++#define LO_REGNUM 28
++#define HI_REGNUM 29
++#define FP_REG_P(n)  FIRST_FP_REG
++//-- results
++rtx
++mips_subword (rtx op, int high_p)
++{
++  unsigned int byte;
++  enum machine_mode mode;
++
++  mode = GET_MODE (op);
++  if (mode == VOIDmode)
++    mode = DImode;
++
++  if (TARGET_BIG_ENDIAN ? !high_p : high_p)
++    byte = UNITS_PER_WORD;
++  else
++    byte = 0;
++
++  if (REG_P (op))
++    {
++      if (FP_REG_P (REGNO (op)))
++	return gen_rtx_REG (word_mode, high_p ? REGNO (op) + 1 : REGNO (op));
++      if (REGNO (op) == HI_REGNUM)
++	return gen_rtx_REG (word_mode, high_p ? HI_REGNUM : LO_REGNUM);
++    }
++  //#if 0
++  if (MEM_P (op))
++    return mips_rewrite_small_data (adjust_address (op, word_mode, byte));
++  //#endif
++  return simplify_gen_subreg (word_mode, op, mode, byte);
++}
++#endif /* 000 */
++
++
++/* Return true if a 64-bit move from SRC to DEST should be split into two.  */
++#if 0
++bool
++mips_split_64bit_move_p (rtx dest, rtx src)
++{
++  if (TARGET_64BIT)
++    return false;
++
++  /* FP->FP moves can be done in a single instruction.  */
++  if (FP_REG_RTX_P (src) && FP_REG_RTX_P (dest))
++    return false;
++
++  /* Check for floating-point loads and stores.  They can be done using
++     ldc1 and sdc1 on MIPS II and above.  */
++  if (mips_isa > 1)
++    {
++      if (FP_REG_RTX_P (dest) && MEM_P (src))
++	return false;
++      if (FP_REG_RTX_P (src) && MEM_P (dest))
++	return false;
++    }
++  return true;
++}
++
++#endif
++
++#if 000
++/* Split a 64-bit move from SRC to DEST assuming that
++   mips_split_64bit_move_p holds.
++
++   Moves into and out of FPRs cause some difficulty here.  Such moves
++   will always be DFmode, since paired FPRs are not allowed to store
++   DImode values.  The most natural representation would be two separate
++   32-bit moves, such as:
++
++	(set (reg:SI $f0) (mem:SI ...))
++	(set (reg:SI $f1) (mem:SI ...))
++
++   However, the second insn is invalid because odd-numbered FPRs are
++   not allowed to store independent values.  Use the patterns load_df_low,
++   load_df_high and store_df_high instead.  */
++
++void
++mips_split_64bit_move (rtx dest, rtx src)
++{
++  //#if 0
++  if (FP_REG_RTX_P (dest))
++    {
++      /* Loading an FPR from memory or from GPRs.  */
++      emit_insn (gen_load_df_low (copy_rtx (dest), mips_subword (src, 0)));
++      emit_insn (gen_load_df_high (dest, mips_subword (src, 1),
++				   copy_rtx (dest)));
++    }
++  else if (FP_REG_RTX_P (src))
++    {
++      /* Storing an FPR into memory or GPRs.  */
++      emit_move_insn (mips_subword (dest, 0), mips_subword (src, 0));
++      emit_insn (gen_store_df_high (mips_subword (dest, 1), src));
++    }
++  else
++    {
++      //#endif
++      /* The operation can be split into two normal moves.  Decide in
++	 which order to do them.  */
++      rtx low_dest;
++
++      low_dest = mips_subword (dest, 0);
++      if (REG_P (low_dest)
++	  && reg_overlap_mentioned_p (low_dest, src))
++	{
++	  emit_move_insn (mips_subword (dest, 1), mips_subword (src, 1));
++	  emit_move_insn (low_dest, mips_subword (src, 0));
++	}
++      else
++	{
++	  emit_move_insn (low_dest, mips_subword (src, 0));
++	  emit_move_insn (mips_subword (dest, 1), mips_subword (src, 1));
++	}
++      //#if 0
++    }
++  //#endif
++}
++#endif /* 000 */
++
++
++/* Return the appropriate instructions to move SRC into DEST.  Assume
++   that SRC is operand 1 and DEST is operand 0.  */
++#if 0
++const char *
++mips_output_move (rtx dest, rtx src)
++{
++  enum rtx_code dest_code, src_code;
++  bool dbl_p;
++
++  dest_code = GET_CODE (dest);
++  src_code = GET_CODE (src);
++  dbl_p = (GET_MODE_SIZE (GET_MODE (dest)) == 8);
++
++  if (dbl_p && mips_split_64bit_move_p (dest, src))
++    return "#";
++
++  if ((src_code == REG && GP_REG_P (REGNO (src)))
++      || (!TARGET_MIPS16 && src == CONST0_RTX (GET_MODE (dest))))
++    {
++      if (dest_code == REG)
++	{
++	  if (GP_REG_P (REGNO (dest)))
++	    return "move\t%0,%z1";
++
++	  if (MD_REG_P (REGNO (dest)))
++	    return "mt%0\t%z1";
++
++	  if (FP_REG_P (REGNO (dest)))
++	    return (dbl_p ? "dmtc1\t%z1,%0" : "mtc1\t%z1,%0");
++
++	  if (ALL_COP_REG_P (REGNO (dest)))
++	    {
++	      static char retval[] = "dmtc_\t%z1,%0";
++
++	      retval[4] = COPNUM_AS_CHAR_FROM_REGNUM (REGNO (dest));
++	      return (dbl_p ? retval : retval + 1);
++	    }
++	}
++      if (dest_code == MEM)
++	return (dbl_p ? "sd\t%z1,%0" : "sw\t%z1,%0");
++    }
++  if (dest_code == REG && GP_REG_P (REGNO (dest)))
++    {
++      if (src_code == REG)
++	{
++	  if (ST_REG_P (REGNO (src)) && ISA_HAS_8CC)
++	    return "lui\t%0,0x3f80\n\tmovf\t%0,%.,%1";
++
++	  if (FP_REG_P (REGNO (src)))
++	    return (dbl_p ? "dmfc1\t%0,%1" : "mfc1\t%0,%1");
++
++	  if (ALL_COP_REG_P (REGNO (src)))
++	    {
++	      static char retval[] = "dmfc_\t%0,%1";
++
++	      retval[4] = COPNUM_AS_CHAR_FROM_REGNUM (REGNO (src));
++	      return (dbl_p ? retval : retval + 1);
++	    }
++	}
++
++      if (src_code == MEM)
++	return (dbl_p ? "ld\t%0,%1" : "lw\t%0,%1");
++
++      if (src_code == CONST_INT)
++	{
++	  /* Don't use the X format, because that will give out of
++	     range numbers for 64 bit hosts and 32 bit targets.  */
++	  if (!TARGET_MIPS16)
++	    return "li\t%0,%1\t\t\t# %X1";
++
++	  if (INTVAL (src) >= 0 && INTVAL (src) <= 0xffff)
++	    return "li\t%0,%1";
++
++	  if (INTVAL (src) < 0 && INTVAL (src) >= -0xffff)
++	    return "#";
++	}
++
++      if (src_code == HIGH)
++	return "lui\t%0,%h1";
++
++      if (CONST_GP_P (src))
++	return "move\t%0,%1";
++
++      if (symbolic_operand (src, VOIDmode))
++	return (dbl_p ? "dla\t%0,%1" : "la\t%0,%1");
++    }
++  if (src_code == REG && FP_REG_P (REGNO (src)))
++    {
++      if (dest_code == REG && FP_REG_P (REGNO (dest)))
++	{
++	  if (GET_MODE (dest) == V2SFmode)
++	    return "mov.ps\t%0,%1";
++	  else
++	    return (dbl_p ? "mov.d\t%0,%1" : "mov.s\t%0,%1");
++	}
++
++      if (dest_code == MEM)
++	return (dbl_p ? "sdc1\t%1,%0" : "swc1\t%1,%0");
++    }
++  if (dest_code == REG && FP_REG_P (REGNO (dest)))
++    {
++      if (src_code == MEM)
++	return (dbl_p ? "ldc1\t%0,%1" : "lwc1\t%0,%1");
++    }
++  if (dest_code == REG && ALL_COP_REG_P (REGNO (dest)) && src_code == MEM)
++    {
++      static char retval[] = "l_c_\t%0,%1";
++
++      retval[1] = (dbl_p ? 'd' : 'w');
++      retval[3] = COPNUM_AS_CHAR_FROM_REGNUM (REGNO (dest));
++      return retval;
++    }
++  if (dest_code == MEM && src_code == REG && ALL_COP_REG_P (REGNO (src)))
++    {
++      static char retval[] = "s_c_\t%1,%0";
++
++      retval[1] = (dbl_p ? 'd' : 'w');
++      retval[3] = COPNUM_AS_CHAR_FROM_REGNUM (REGNO (src));
++      return retval;
++    }
++  gcc_unreachable ();
++}
++
++#endif
++
++/* Return the best assembler insn template
++   for moving operands[1] into operands[0] as a fullword.  */
++static const char *
++lw_string (rtx *operands)
++{
++  return "LW      %0,%1";
++}
++static const char *
++sw_string (rtx *operands)
++{
++  return "SW      %0,%1";
++}
++static const char *
++mov_string (rtx *operands)
++{
++  return "ADD      %0,r0,%1";
++}
++
++static const char *
++off1_string (rtx *operands)
++{
++  return "Lw      %2,%1";
++}
++static const char *
++off2_string (rtx *operands)
++{
++  return "Sw      %0,%2";
++}
++
++/* Output assembler code to perform a doubleword move insn
++   with operands OPERANDS.  */
++#if 1
++const char *
++output_move_double (rtx *operands)
++{
++  enum
++    {
++      REGOP, OFFSOP, MEMOP ,ERROP,XXXXOP
++    } optype0, optype1,optype2;
++
++  rtx latehalf[3];
++  int size = GET_MODE_SIZE (GET_MODE (operands[0]));
++
++  enum rtx_code code0 = GET_CODE (operands[0]);
++  enum rtx_code code1 = GET_CODE (operands[1]);
++  enum rtx_code code2 = GET_CODE (operands[2]);
++printf("code0=%d code1=%d code2=%d \n",code0,code1,code2);
++printf("REG=%d MEM=%d CODE_LABEL=%d \n",REG,MEM,CODE_LABEL);
++
++  if (REG_P (operands[0]))
++  {
++    optype0 = REGOP;
++  }
++  else if (MEM_P (operands[0]))
++  {
++    optype0 = MEMOP;
++  }
++  else if (offsettable_nonstrict_memref_p (operands[0]))
++  {
++	optype0 = XXXXOP;
++  }
++  else
++  {
++    abort_with_insn (*operands, "### operands0 PRINT_OPERAND, Can't double inst pat.");
++  }
++
++  if (REG_P (operands[1]))
++    optype1 = REGOP;
++  else if (MEM_P (operands[1]))
++    optype1 = MEMOP;
++  else
++  {
++    abort_with_insn (*operands, "### operands1 PRINT_OPERAND, Can't double inst pat.");
++  }
++printf("optype0=%d optype1=%d\n",optype0,optype1);
++  if (optype0 == REGOP)
++	latehalf[0] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
++  else if (optype0 == MEMOP)
++	latehalf[0] = adjust_address (operands[0], SImode, size - 4);
++  else
++	latehalf[0] = adjust_address (operands[0], SImode, size - 4);
++  
++  if (optype1 == REGOP)
++	latehalf[1] = gen_rtx_REG (SImode, REGNO (operands[1]) + 1);
++  else if (optype1 == MEMOP)
++	latehalf[1] = adjust_address (operands[1], SImode, size - 4);
++  else
++	latehalf[1] = adjust_address (operands[1], SImode, size - 4);
++
++	latehalf[2] = gen_rtx_REG (SImode, REGNO (operands[2]));
++
++  if( (optype0 == REGOP)&&(optype1 == MEMOP) )
++  {
++    output_asm_insn (lw_string (operands), operands);
++    output_asm_insn (lw_string (latehalf), latehalf);
++    output_asm_insn ("nop",latehalf);
++  }
++  else if( (optype1 == REGOP)&&(optype0 == MEMOP) )
++  {
++    output_asm_insn (sw_string (operands), operands);
++    output_asm_insn (sw_string (latehalf), latehalf);
++  }
++  else if( (optype0 == REGOP)&&(optype1 == REGOP) )
++  {
++    output_asm_insn (mov_string (operands), operands);
++    output_asm_insn (mov_string (latehalf), latehalf);
++  }
++  else if( (optype0 == MEMOP)&&(optype1 == MEMOP) )
++  {
++    output_asm_insn (off1_string (operands), operands);    
++    output_asm_insn (off2_string (operands), operands);
++    output_asm_insn (off1_string (latehalf), latehalf);
++    output_asm_insn (off2_string (latehalf), latehalf);
++  }
++  else
++  {
++    output_asm_insn ("NoP",latehalf);
++  }
++  return "";
++}
++#else
++const char *
++output_move_double (rtx *operands)
++{
++  enum
++    {
++      REGOP, OFFSOP, MEMOP ,ERROP,XXXXOP
++    } optype0, optype1,optype2;
++
++  rtx latehalf[3];
++  int size = GET_MODE_SIZE (GET_MODE (operands[0]));
++
++  enum rtx_code code0 = GET_CODE (operands[0]);
++  enum rtx_code code1 = GET_CODE (operands[1]);
++  enum rtx_code code2 = GET_CODE (operands[2]);
++printf("code0=%d code1=%d code2=%d \n",code0,code1,code2);
++printf("REG=%d MEM=%d CODE_LABEL=%d \n",REG,MEM,CODE_LABEL);
++
++  if (REG_P (operands[0]))
++  {
++    optype0 = REGOP;
++  }
++  else if (offsettable_memref_p (operands[0]))
++  {
++    optype0 = OFFSOP;
++  }
++  else if (offsettable_nonstrict_memref_p (operands[0]))
++  {
++	optype0 = XXXXOP;
++  }
++  else if (MEM_P (operands[0]))
++  {
++	optype0 = MEMOP;
++  }
++  else
++  {
++    abort_with_insn (*operands, "### operands0 PRINT_OPERAND, Can't double inst pat.");
++  }
++
++  if (REG_P (operands[1]))
++    optype1 = REGOP;
++  else if (offsettable_memref_p (operands[1]))
++    optype1 = OFFSOP;
++  else if (MEM_P (operands[1]))
++    optype1 = MEMOP;
++  else
++  {
++    abort_with_insn (*operands, "### operands1 PRINT_OPERAND, Can't double inst pat.");
++  }
++printf("optype0=%d optype1=%d\n",optype0,optype1);
++  if (optype0 == REGOP)
++	latehalf[0] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
++  else if (optype0 == OFFSOP)
++	latehalf[0] = adjust_address (operands[0], SImode, size - 4);
++  else
++	latehalf[0] = adjust_address (operands[0], SImode, size - 4);
++  
++  if (optype1 == REGOP)
++	latehalf[1] = gen_rtx_REG (SImode, REGNO (operands[1]) + 1);
++  else if (optype1 == OFFSOP)
++	latehalf[1] = adjust_address (operands[1], SImode, size - 4);
++  else
++	latehalf[1] = adjust_address (operands[1], SImode, size - 4);
++
++	latehalf[2] = gen_rtx_REG (SImode, REGNO (operands[2]));
++
++  if( (optype0 == REGOP)&&(optype1 == OFFSOP) )
++  {
++    output_asm_insn (lw_string (operands), operands);
++    output_asm_insn (lw_string (latehalf), latehalf);
++    output_asm_insn ("nop",latehalf);
++  }
++  else if( (optype1 == REGOP)&&(optype0 == OFFSOP) )
++  {
++    output_asm_insn (sw_string (operands), operands);
++    output_asm_insn (sw_string (latehalf), latehalf);
++  }
++  else if( (optype0 == REGOP)&&(optype1 == REGOP) )
++  {
++    output_asm_insn (mov_string (operands), operands);
++    output_asm_insn (mov_string (latehalf), latehalf);
++  }
++  else if( (optype0 == OFFSOP)&&(optype1 == OFFSOP) )
++  {
++    output_asm_insn (off1_string (operands), operands);    
++    output_asm_insn (off2_string (operands), operands);
++    output_asm_insn (off1_string (latehalf), latehalf);
++    output_asm_insn (off2_string (latehalf), latehalf);
++  }
++  else if( (optype0 == MEMOP )&&(optype1 == OFFSOP) )
++  {
++add %2,r0,
++  }
++  else
++  {
++    output_asm_insn ("NoP",latehalf);
++  }
++  return "";
++}
++#endif
++//--------------- Double move exe C.katano 070621 <--
++
++/* Worker function for TARGET_SETUP_INCOMING_VARARGS.  */
++
++static void
++brownie32_setup_incoming_varargs (CUMULATIVE_ARGS *ca,
++			     enum machine_mode mode ATTRIBUTE_UNUSED,
++			     tree type ATTRIBUTE_UNUSED,
++			     int *pretend_arg_size ATTRIBUTE_UNUSED,
++			     int second_time ATTRIBUTE_UNUSED)
++{
++  ca->anonymous_args = 1;
++}
++
++
++/* Try machine-dependent ways of modifying an illegitimate address
++   to be legitimate.  If we find one, return the new, valid address.  */
++/*
++*(sym+off32) ->
++
++old --
++ addhi ra,, %hi(sym+off32)
++ lso ra,,%lo(sym+off32)
++ sw (ra)
++
++new --
++ addhi rb, %hi(off32)    # max is 0xfff7, why?
++ add ra,ra,rb
++ sw %lo(off32)(ra),..
++*/
++
++rtx
++brownie32_legitimize_address (rtx x, rtx scratch,
++			  enum machine_mode mode ATTRIBUTE_UNUSED)
++{
++  HOST_WIDE_INT addend;
++
++  /* If the address is (plus reg const_int) and the CONST_INT is not a
++     valid offset, compute the high part of the constant and add it to
++     the register.  Then our address is (plus temp low-part-const).  */
++  if (GET_CODE (x) == PLUS
++      && GET_CODE (XEXP (x, 0)) == REG
++      && GET_CODE (XEXP (x, 1)) == CONST_INT
++      && ! CONSTANT_ADDRESS_P (XEXP (x, 1)))
++    {
++      addend = INTVAL (XEXP (x, 1));
++      x = XEXP (x, 0);
++      goto split_addend;
++    }
++
++  /* If the address is (const (plus symbol const_int)), find the low-order
++     part of the CONST_INT.  Then load FOO plus any high-order part of the
++     CONST_INT into a register.  Our address is (plus reg low-part-const).
++     This is done to reduce the number of GOT entries.  */
++  if (!no_new_pseudos
++      && GET_CODE (x) == CONST
++      && GET_CODE (XEXP (x, 0)) == PLUS
++      && GET_CODE (XEXP (XEXP (x, 0), 1)) == CONST_INT)
++    {
++      addend = INTVAL (XEXP (XEXP (x, 0), 1));
++      x = force_reg (Pmode, XEXP (XEXP (x, 0), 0));
++      goto split_addend;
++    }
++  return NULL;
++
++ split_addend:
++  {
++    HOST_WIDE_INT low, high;
++
++#if 0
++    low = ((addend & 0xffff) ^ 0x8000) - 0x8000;
++    addend -= low;
++    high = ((addend & 0xffffffff) ^ 0x80000000) - 0x80000000;
++    addend -= high;
++#endif
++    low = ((addend & 0xffff) ^ 0x8000) - 0x8000 + 16; /* [, 0xfff7]-- ok for high */
++    addend -= low;
++    high = ((addend & 0xffffffff) ^ 0x80000000) - 0x80000000;
++    addend -= high;
++
++
++
++    if (addend)
++      x = expand_simple_binop (Pmode, PLUS, x, GEN_INT (addend),
++			       (no_new_pseudos ? scratch : NULL_RTX),
++			       1, OPTAB_LIB_WIDEN);
++    if (high)
++      x = expand_simple_binop (Pmode, PLUS, x, GEN_INT (high),
++			       (no_new_pseudos ? scratch : NULL_RTX),
++			       1, OPTAB_LIB_WIDEN);
++
++    return plus_constant (x, low);
++  }
++}
++
++
++/* Fix up any incompatible options that the user has specified.
++   This has now turned into a maze.  */
++/*  need peephole optimize when -O1 and more for nomalize to use lt or ltu.  */
++
++void
++brownie32_override_options (void)
++{
++  if (optimize)
++    flag_peephole2 = 1;
++}
+Index: gcc/config/brownie32/brownie32.h
+===================================================================
+RCS file: gcc/config/brownie32/brownie32.h
+diff -N gcc/config/brownie32/brownie32.h
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/brownie32.h	24 Feb 2008 13:57:48 -0000	1.8
+@@ -0,0 +1,947 @@
++/*
++ *  Brownie32 (header file)
++ *
++ *  Copyright (C) 1994,1995  Aaron Sawdey
++ *  Copyright (C) 2005,2006  Upwind Technology, Inc.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ *  Email: sawdey@mountains.ee.umn.edu
++ *
++ *  Snail Mail:
++ *
++ *  Department of Electrical Engineering
++ *  University of Minnesota
++ *  4-174 EE/CSci Building
++ *  200 Union Street S.E.
++ *  Minneapolis, MN 55455
++ *
++ */
++
++/* Standard GCC variables that we reference.  */
++
++extern int      target_flags;
++
++/* Globalizing directive for a label.  */
++#define GLOBAL_ASM_OP "\t.globl\t"
++
++#define MASK_EXPLICIT_RELOCS 0x00000010 /* Use relocation operators.  */
++/* True if we should use NewABI-style relocation operators for
++   symbolic addresses.  This is never true for mips16 code,
++   which has its own conventions.  */
++#define TARGET_EXPLICIT_RELOCS  ((target_flags & MASK_EXPLICIT_RELOCS) != 0)
++
++/* Debugging Information */
++#define DBX_DEBUGGING_INFO 1            /* generate stabs (OSF/rose) */
++//#define MIPS_DEBUGGING_INFO 1           /* MIPS specific debugging info */
++//#define DWARF2_DEBUGGING_INFO 1         /* dwarf2 debugging info */
++
++#undef PREFERRED_DEBUGGING_TYPE
++#define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
++/*
++#ifndef PREFERRED_DEBUGGING_TYPE
++#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
++#endif
++*/
++
++#define DWARF2_ADDR_SIZE 4
++
++/* By default, turn on GDB extensions.  */
++#define DEFAULT_GDB_EXTENSIONS 1
++
++
++/*
++ ***************************************************************************
++ *
++ * Comparison stuff.
++ * Modeled off of the RS6000 description.
++ *
++ */
++
++extern struct rtx_def *dlx_compare_op0, *dlx_compare_op1;
++extern enum machine_mode dlx_compare_mode;
++
++/* so local labels are (fairly) unique. */
++/* Changed by Kenichi Nakamura */
++extern char *fn_minus_ext(void);
++
++//#define CPP_PREDEFINES "-DDLX -Ddlx -D__dlx__ -D__DLX__"
++
++#define TARGET_VERSION printf(stderr," (Brownie32 microprocessor)");
++ 
++/*
++ * Prevent gcc from adding -lgcc
++ */
++//#define LIBGCC_SPEC ""
++
++
++#define TARGET_QUICKCALL	((target_flags & MASK_QUICKCALL) != 0)
++
++
++
++
++/* Macro to define tables used to set the flags.
++   This is a list in braces of pairs in braces,
++   each pair being { "NAME", VALUE }
++   where VALUE is the bits to set or minus the bits to clear.
++   An empty string NAME is used to identify the default VALUE.  */
++
++
++#ifndef EXTRA_SWITCHES
++#define EXTRA_SWITCHES
++#endif
++
++#ifndef TARGET_DEFAULT
++#define TARGET_DEFAULT 		MASK_DEFAULT
++#endif
++
++
++//#define LIB_SPEC "%{!mtraps:-lc}%{mtraps:-ltraps}"
++#undef LIB_SPEC
++#define LIB_SPEC "-lc"
++
++/* for normalize to use lt or ltu with peephole2 in optimization.  */
++#define OVERRIDE_OPTIONS  brownie32_override_options ()
++
++
++
++#define BITS_BIG_ENDIAN 0
++#define BYTES_BIG_ENDIAN 1
++#define WORDS_BIG_ENDIAN 1
++#define FLOAT_WORDS_BIG_ENDIAN 1
++
++#define BITS_PER_UNIT 8
++#define BITS_PER_WORD 32
++#define UNITS_PER_WORD 4
++
++//#define MIN_UNITS_PER_WORD 4  1213
++#define MIN_UNITS_PER_WORD 4
++
++#define POINTER_SIZE 32
++
++#define PARM_BOUNDARY 32
++//#define STACK_BOUNDARY 64   C.Katano Nov-23-2006
++#define STACK_BOUNDARY 32
++#define FUNCTION_BOUNDARY 32
++#define BIGGEST_ALIGNMENT 32    /* double */
++#define BIGGEST_FIELD_ALIGNMENT 32
++#define EMPTY_FIELD_BOUNDARY 32
++#define STRUCTURE_SIZE_BOUNDARY 8
++#define STRICT_ALIGNMENT 1
++
++#define TARGET_FLOAT_FORMAT IEEE_FLOAT_FORMAT
++
++#define INT_TYPE_SIZE 32
++#define SHORT_TYPE_SIZE 16
++#define LONG_TYPE_SIZE 32
++
++//#define LONG_LONG_TYPE_SIZE 64  1213
++#define LONG_LONG_TYPE_SIZE 64
++
++#define CHAR_TYPE_SIZE 8
++#define FLOAT_TYPE_SIZE 32
++#define DOUBLE_TYPE_SIZE 64
++#define LONG_DOUBLE_TYPE_SIZE 64
++
++#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE 64
++
++/* This way we can do char operations with regular 
++   register-register ops and not worry about negative
++   chars, so it should be faster. */
++#define DEFAULT_SIGNED_CHAR 0
++
++#define MAX_FIXED_MODE_SIZE 32
++
++/* DLX floating point CC */
++//#define EXTRA_CC_MODES CCFPmode
++//#define EXTRA_CC_NAMES "CCFP"
++
++/* Changed by Kenichi Nakamura */
++#define SELECT_CC_MODE(OP,X,Y) \
++  (GET_MODE_CLASS (GET_MODE (X)) == MODE_FLOAT ? SFmode : SImode)
++/*
++  (GET_MODE_CLASS (GET_MODE (X)) == MODE_FLOAT ? CCFPmode : SImode)
++*/
++
++
++#define STORE_FLAG_VALUE 1
++
++#define DEFAULT_PCC_STRUCT_RETURN 0
++//#define STRUCT_VALUE_REGNUM 1
++
++#define NO_FUNCTION_CSE
++//#define NO_RECURSIVE_FUNCTION_CSE
++
++#define FUNCTION_MODE QImode
++
++#define Pmode SImode
++
++
++#define EXIT_IGNORE_STACK 0
++
++#define CASE_VECTOR_MODE SImode
++
++/* Define results of standard character escape sequences.  */
++/*
++#define TARGET_BELL     007
++#define TARGET_BS       010
++#define TARGET_TAB      011
++#define TARGET_NEWLINE  012
++#define TARGET_VT       013
++#define TARGET_FF       014
++#define TARGET_CR       015
++#define EASY_DIV_EXPR TRUNC_DIV_EXPR
++*/
++
++#define SLOW_BYTE_ACCESS 1
++
++/*
++ *
++ */
++#define TRULY_NOOP_TRUNCATION(OUTPREC, INPREC) 1
++
++/*
++ * We can't load any constants as immediates.
++ */
++#define CONST_DOUBLE_OK_FOR_LETTER_P(VALUE, C) 0
++
++/*
++ * Since all the registers are equivalent, 
++ * a value can be reloaded in any register of the same
++ * class.
++ */
++#define PREFERRED_RELOAD_CLASS(x,class) class
++
++
++/* 
++ * It would be silly to try and profile a 
++ * simulated machine, would it not?
++ */
++#define FUNCTION_PROFILER(file,labelno)
++
++#if 000
++#define ASM_OUTPUT_REG_PUSH(stream,regno)       \
++{ if(regno <= LAST_INT_REG) fprintf(stream,"\tsw\t-4(r29),r%d\n",regno);  \
++  else fprintf(stream,"\tsf\t-4(r29),f%d\n",regno);                       \
++  fputs("\taddi\tr29,r29,#-4\n",stream); }
++
++#define ASM_OUTPUT_REG_POP(stream,regno)        \
++{ if(regno <= LAST_INT_REG) fprintf(stream,"\tlw\tr%d,-4(r29)\n",regno);  \
++  else fprintf(stream,"\tsf\tr%d,-4(r29)\n",regno);                       \
++  fputs("\taddi\tr29,r29,#4\n",stream); }
++#endif /* 000 */
++
++/*
++push -- sw -4(r%d),r%d
++        addi r%d,r%d,#-4
++pop -- lw r%d,-4(r%d)
++       addi r%d,r%d,#4
++*/
++#define ASM_OUTPUT_REG_PUSH(stream,regno)       \
++  { fprintf (stream,"\tsw\t-4(%s),%s\n", reg_names[STACK_POINTER_REGNUM], \
++	     reg_names[regno]);						\
++    fprintf (stream, "\taddi\t%s,%s,#-4\n", reg_names[STACK_POINTER_REGNUM], \
++	     reg_names[STACK_POINTER_REGNUM]); }
++
++#define ASM_OUTPUT_REG_POP(stream, regno)        \
++  { fprintf (stream, "\tlw\t%s,-4(%s)\n", reg_names[regno], \
++             reg_names[STACK_POINTER_REGNUM]);			\
++    fprintf (stream, "\taddi\t%s,%s,#4\n", reg_names[STACK_POINTER_REGNUM], \
++	     reg_names[STACK_POINTER_REGNUM]); }
++
++
++/* memory copy with 32 bit words. */
++#define MOVE_MAX 4
++
++/*
++ * Small int constants have no cost since they
++ * can be used as immediates.
++ * Larger int constants and symbols/labels
++ * cost 2 instruction (addui/lhi).
++ * Doubles cost more, since we have to load the
++ * address (addui/lhi) and then load the constant.
++ */
++
++
++/* Deleted by Kenichi Nakamura
++#define CONST_COSTS(X, CODE, OUTER_CODE)        \
++ case CONST_INT:                                \
++  if(SMALL_INT(X)) return 0;                    \
++  else return COSTS_N_INSNS(2);                 \
++ case CONST:                                    \
++ case SYMBOL_REF:                               \
++ case LABEL_REF:                                \
++  return COSTS_N_INSNS(2);                      \
++ case CONST_DOUBLE:                             \
++  return COSTS_N_INSNS(8);
++*/
++
++/* Changed by Kenichi Nakamura
++#define MEMORY_MOVE_COST(m) ((GET_MODE_SIZE(m) > UNITS_PER_WORD)?8:4)
++*/
++#define MEMORY_MOVE_COST(MODE, CLASS, TO_P) ((GET_MODE_SIZE(MODE) > UNITS_PER_WORD)?8:4)
++
++#define TEXT_SECTION_ASM_OP ".text"
++#define DATA_SECTION_ASM_OP ".data"
++
++/* Given a decl node or constant node, choose the section to output it in
++   and select that section.  */
++/* These are from mips.h, simplified somewhat. */
++/*
++#define SELECT_RTX_SECTION(MODE,RTX)            \
++  data_section()
++
++#define SELECT_SECTION(DECL, RELOC)					\
++{                                                                       \
++  if(RELOC)                                                             \
++    data_section();                                                     \
++  else if(TREE_CODE(DECL) == STRING_CST)				\
++    data_section();							\
++  else if(TREE_CODE(DECL) != VAR_DECL)                                  \
++    text_section();                                                     \
++  else                                                                  \
++    data_section();                                                     \
++}
++*/
++
++#define ASM_APP_ON ";#APP\n"
++#define ASM_APP_OFF ";#NO_APP\n"
++//#define ASM_IDENTIFY_GCC(file) fputs("; Compiled by GCC\n",file)
++#define ASM_COMMENT_START ";;"
++//#define ASM_FILE_START(stream) asm_file_start(stream)
++//#define ASM_FILE_END(stream) asm_file_end(stream)
++#define ASM_LONG ".word"
++#define ASM_SHORT ".half"
++//#define ASM_OPEN_PAREN "("
++//#define ASM_CLOSE_PAREN ")"
++
++/* If defined, a C expression to compute the alignment given to a
++   constant that is being placed in memory.  CONSTANT is the constant
++   and ALIGN is the alignment that the object would ordinarily have.
++   The value of this macro is used instead of that alignment to align
++   the object.
++
++   If this macro is not defined, then ALIGN is used.
++
++   The typical use of this macro is to increase alignment for string
++   constants to be word aligned so that `strcpy' calls that copy
++   constants can be done inline.  */
++/* Stolen from mips.h */
++
++#define CONSTANT_ALIGNMENT(EXP, ALIGN)                                  \
++  ((TREE_CODE (EXP) == STRING_CST  || TREE_CODE (EXP) == CONSTRUCTOR)   \
++   && (ALIGN) < BITS_PER_WORD                                           \
++        ? BITS_PER_WORD                                                 \
++        : (ALIGN))
++
++/* If defined, a C expression to compute the alignment for a static
++   variable.  TYPE is the data type, and ALIGN is the alignment that
++   the object would ordinarily have.  The value of this macro is used
++   instead of that alignment to align the object.
++
++   If this macro is not defined, then ALIGN is used.
++
++   One use of this macro is to increase alignment of medium-size
++   data to make it all fit in fewer cache lines.  Another is to
++   cause character arrays to be word-aligned so that `strcpy' calls
++   that copy constants to character arrays can be done inline.  */
++/* Stolen from mips.h */
++
++#undef DATA_ALIGNMENT
++#define DATA_ALIGNMENT(TYPE, ALIGN)                                     \
++  ((((ALIGN) < BITS_PER_WORD)                                           \
++    && (TREE_CODE (TYPE) == ARRAY_TYPE                                  \
++        || TREE_CODE (TYPE) == UNION_TYPE                               \
++        || TREE_CODE (TYPE) == RECORD_TYPE)) ? BITS_PER_WORD : (ALIGN))
++
++#define ASM_OUTPUT_ALIGN(stream,val) fprintf(stream,"\t.align %d\n",(val))
++/* Deleted by Kenichi Nakamura
++#define ASM_OUTPUT_SKIP(stream,val)  fprintf(stream,"\t.space %d\n",(val))
++*/
++#define ASM_OUTPUT_FLOAT(stream,value) \
++   { long l;                                 \
++      REAL_VALUE_TO_TARGET_SINGLE(value,l); \
++      fprintf(stream,"\t.word 0x%08x\t\n;; %26.7e\n",l,value); }
++#define ASM_OUTPUT_DOUBLE(stream,value) 			\
++   { long l[2];                                 		\
++      REAL_VALUE_TO_TARGET_DOUBLE(value,&l[0]); 		\
++      fprintf(stream,"\t.word 0x%08x,0x%08x\t\n;; %26.16le\n",	\
++	      l[0],l[1],value); }
++#define ASM_OUTPUT_LONG_DOUBLE(stream,value) \
++   { long l[4];                                 \
++      REAL_VALUE_TO_TARGET_DOUBLE(value,&l[0]); \
++      fprintf(stream,"\t.word 0x%08x,0x%08x,0x%08x,0x%08x\t\n;; %26.18lle\n", \
++	      l[0],l[1],l[2],l[3],value); }
++
++#define ASM_OUTPUT_INT(stream,exp) \
++      fprintf(stream,"\t.word "); output_addr_const(stream,exp); \
++      putc('\n',stream) 
++
++#define ASM_OUTPUT_SHORT(stream,exp) \
++      fprintf(stream,"\t.half "); output_addr_const(stream,exp); \
++      putc('\n',stream) 
++
++#define ASM_OUTPUT_CHAR(stream,exp) \
++      fprintf(stream,"\t.byte "); output_addr_const(stream,exp); \
++      putc('\n',stream) 
++
++#define ASM_OUTPUT_BYTE(stream,val) fprintf(stream,"\t.byte 0x%02x\n",val)
++#define ASM_BYTE_OP ".byte"
++
++/*
++ * Need to split up .ascii directives to avoid breaking 
++ * the linker.
++ */
++/* Deleted by Kenichi Nakamura
++#define ASM_OUTPUT_ASCII(stream, ptr, len)			\
++    asm_output_ascii(stream,ptr,len)
++*/
++
++/* Deleted by Amane Otake
++#define ASM_OUTPUT_FUNCTION_PREFIX(stream, fnname)		\
++  fputs(".proc ",stream); assemble_name(stream,fnname);		\
++  fputs("\n",stream);
++*/
++
++#define ASM_OUTPUT_COMMON(stream,name,size,rounded)             \
++{ data_section();                                               \
++  fputs(".global\t",stream); assemble_name(stream,name);        \
++  fputs("\n",stream); assemble_name(stream,name);               \
++  fprintf(stream,":\n\t.space %d\n",rounded); }
++
++/* Deleted by Kenichi Nakamura
++#define ASM_OUTPUT_ALIGNED_COMMON(stream, name, size, alignment) \
++{ data_section();						 \
++  if((alignment)>8) 						 \
++    fprintf(stream,"\t.align %d\n",log_of_two(alignment>>3));    \
++  fputs(".global\t",stream); assemble_name(stream,name);         \
++  fputs("\n",stream);						 \
++  assemble_name(stream,name);                                    \
++  fprintf(stream,":\n\t.space %d\n",size); }
++
++#define ASM_OUTPUT_ALIGNED_LOCAL(stream, name, size, alignment)  \
++{ data_section();                                                \
++  if((alignment)>8)						 \
++    fprintf(stream,"\t.align %d\n",log_of_two(alignment>>3));    \
++  assemble_name(stream,name);                                    \
++  fprintf(stream,":\n\t.space %d\n",size); }
++*/
++#define ASM_OUTPUT_LABEL(stream, label)                 \
++{ assemble_name(stream,label); fputs(":\n",stream); }
++/* Deleted by Kenichi Nakamura
++#define ASM_GLOBALIZE_LABEL(stream,label)               \
++{ fputs(".global ",stream); assemble_name(stream,label); \
++  fputs("\n",stream); }
++*/
++
++#define ASM_OUTPUT_LABELREF(stream,name)                \
++{ fputc('_',stream); fputs(name,stream); }
++
++/* Deleted by Kenichi Nakamura
++#define ASM_OUTPUT_INTERNAL_LABEL(stream,prefix,num)    \
++  fprintf(stream, "%s%d:\n", prefix, num)
++#define ASM_OUTPUT_CASE_LABEL(stream,prefix,num,table)  \
++  { data_section(); fprintf(stream,"\t.align 2\n");     \
++    ASM_OUTPUT_INTERNAL_LABEL(stream,prefix,num); }
++*/
++
++#define ASM_OUTPUT_ADDR_VEC_ELT(stream,value)           \
++  fprintf(stream,"\t.word .L%d\n",value)
++
++#define ASM_FORMAT_PRIVATE_NAME(OUTPUT, NAME, LABELNO)			\
++( (OUTPUT) = (char *) alloca (strlen ((NAME)) + 11),			\
++  sprintf ((OUTPUT), "%s%d", (NAME), (LABELNO)))
++
++/* Deleted by Kenichi Nakamura */
++/*
++#define ASM_GENERATE_INTERNAL_LABEL(string,prefix,num)  \
++  sprintf(string, "*%s%d",prefix, num)
++
++void print_operand(FILE *stream, rtx x, int letter);
++void print_operand_address(FILE *stream, rtx x);
++int print_operand_punct_valid_p(int code);
++*/
++  
++#define PRINT_OPERAND(stream,x,code) print_operand(stream,x,code)
++#define PRINT_OPERAND_ADDRESS(stream,x) print_operand_address(stream,x)
++#define PRINT_OPERAND_PUNCT_VALID_P(code) print_operand_punct_valid_p(code)
++
++
++
++
++/* Register usage
++ *
++ * There are 32 int.
++
++  r0 .. zero reg(*
++  r1 .. status(*
++  r2 .. interrupt (static chain reg.)(*
++  r3 .. link reg(*
++
++  r4~r31 .. int reg
++     r4 .. frame pointer
++     r5 .. stack pointer
++     r6/r7 .. return value reg.
++     r8-r15 .. register passing
++ */
++
++#define FIRST_PSEUDO_REGISTER 32
++#define FIRST_INT_REG 0
++#define LAST_INT_REG (FIRST_PSEUDO_REGISTER - 1)
++#define GP_REG_LAST (FIRST_PSEUDO_REGISTER - 1)
++
++
++/*0 1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
++#define FIXED_REGISTERS { \
++ 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     \
++ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
++
++#define CALL_USED_REGISTERS { \
++ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     \
++ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
++
++#define REGISTER_NAMES                                          \
++{ "r0" , "r1" , "r2" , "r3" , "r4" , "r5" , "r6" , "r7",        \
++  "r8" , "r9" , "r10", "r11", "r12", "r13", "r14", "r15",       \
++  "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",       \
++  "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31"}
++
++
++
++/* values that can go in particular registers. */
++/* doubles will be the only thing that will take 2 registers. */
++
++#define HARD_REGNO_NREGS(regno,mode) \
++  ((GET_MODE_SIZE(mode) + UNITS_PER_WORD - 1)/UNITS_PER_WORD)
++
++/*
++ * Allocate registers appropriate to data types. doubles 
++ * require even/odd pairs of fp registers. For simplicity,
++ * I also allocate long long ints to even/odd pairs of int registers.
++ */
++#if 0000
++/* Changed by Kenichi Nakamura */
++extern int hard_regno_mode_ok_func(int regno, int mode);
++
++#define HARD_REGNO_MODE_OK(regno,mode) hard_regno_mode_ok_func(regno,mode)
++#endif /* 0000 */
++
++/* Value is 1 if hard register REGNO can hold a value of machine-mode
++   MODE.  */
++
++#if 0000
++#define HARD_REGNO_MODE_OK(REGNO, MODE) \
++ ((((REGNO) & 1) == 0) || (GET_MODE_SIZE (MODE) <= 4))
++#endif /* 0000 */
++#define HARD_REGNO_MODE_OK(REGNO, MODE)  (GET_MODE_SIZE (MODE) <= 4)
++
++
++#define MODES_TIEABLE_P(mode1, mode2)                                   \
++  (FLOAT_MODE_P(mode1) && FLOAT_MODE_P(mode2))
++
++enum reg_class
++{
++  NO_REGS,                      /* no registers in set */
++  GR_REGS,                      /* integer registers */
++  ALL_REGS,                     /* all registers */
++  LIM_REG_CLASSES
++};
++
++#define N_REG_CLASSES (int) LIM_REG_CLASSES
++
++#define GENERAL_REGS GR_REGS
++
++#define REG_CLASS_NAMES                                                 \
++{                                                                       \
++  "NO_REGS",                                                            \
++  "GR_REGS",                                                            \
++  "ALL_REGS",                                                           \
++}
++
++
++#define REG_CLASS_CONTENTS                                              \
++{                                                                       \
++  { 0x00000000, 0x00000000 },       /* no registers */      \
++  { 0xfffffff0, 0x00000000 },       /* integer registers */ \
++  { 0xffffffff, 0x00000001 }        /* all registers */     \
++}
++
++#define REGNO_REG_CLASS(REGNO)    \
++((REGNO) <= GP_REG_LAST ? GR_REGS : NO_REGS)
++
++#define BASE_REG_CLASS (GR_REGS)
++#define INDEX_REG_CLASS (GR_REGS)
++
++/* Changed by Kenichi Nakamura */
++extern int reg_class_from_letter(int chr);
++
++#define REG_CLASS_FROM_LETTER(char) reg_class_from_letter(char)
++
++/* If we use the normal load/store ops in DLX,
++   it will always sign-extend sub-word types. */
++#define LOAD_EXTEND_OP(mode) SIGN_EXTEND
++
++/*
++ * Memory address stuff.
++ */
++#define MAX_REGS_PER_ADDRESS 1
++
++/* Recognize any constant value that is a valid address.
++   need more alternative?
++*/
++ 
++#define CONSTANT_ADDRESS_P(X)   \
++   (GET_CODE (X) == CONST_INT	\
++    && (unsigned HOST_WIDE_INT) (INTVAL (X) + 0x8000) < 0x10000)
++#if 000
++#define CONSTANT_ADDRESS_P(X)   \
++   ((GET_CODE (X) == CONST_INT)        \
++    && (INTVAL (X) <= 32767) \
++    && (INTVAL (X) >= 0))
++#endif /* 000 */
++
++
++#define REGNO_OK_FOR_BASE_P(REGNO)                                          \
++((REGNO) < FIRST_PSEUDO_REGISTER ? ((REGNO) > 0 && (REGNO) <= LAST_INT_REG) \
++ : (reg_renumber[REGNO] > 0 && (reg_renumber[REGNO] <= LAST_INT_REG )))
++
++#ifdef REG_OK_STRICT
++/* Strict version, used in reload pass. This should not
++ * accept pseudo registers.
++ */
++#define REG_OK_FOR_BASE_P(X) REGNO_OK_FOR_BASE_P(REGNO(X))
++#else
++/* Accept an int register or a pseudo reg. */
++#define REG_OK_FOR_BASE_P(X) (REGNO(X) <= LAST_INT_REG || \
++                              REGNO(X) >= FIRST_PSEUDO_REGISTER)
++#endif
++
++/*
++ * DLX doesn't have any indexed addressing
++ * modes, so nothing is ok as an index register.
++ */
++#define REG_OK_FOR_INDEX_P(X) 0
++#define REGNO_OK_FOR_INDEX_P(X) 0
++
++#define LEGITIMATE_ADDRESS_INTEGER_P(X,OFFSET)          \
++ (GET_CODE (X) == CONST_INT && SMALL_INT(X))
++
++#define LEGITIMATE_OFFSET_ADDRESS_P(MODE,X)             \
++ (GET_CODE (X) == PLUS                                  \
++  && GET_CODE (XEXP (X, 0)) == REG                      \
++  && REG_OK_FOR_BASE_P (XEXP (X, 0))                    \
++  && LEGITIMATE_ADDRESS_INTEGER_P (XEXP (X, 1), 0)      \
++  && (((MODE) != DFmode && (MODE) != DImode)            \
++      || LEGITIMATE_ADDRESS_INTEGER_P (XEXP (X, 1), 4)))
++
++#define LEGITIMATE_NONOFFSET_ADDRESS_P(MODE,X)          \
++             (GET_CODE(X) == REG && REG_OK_FOR_BASE_P(X))
++/* 
++ * This is simple because DLX only has one addressing mode:
++ * register + 16 bit signed offset.
++ */
++#define GO_IF_LEGITIMATE_ADDRESS(MODE,X,ADDR)           \
++  if(LEGITIMATE_OFFSET_ADDRESS_P(MODE,X)) goto ADDR;    \
++  if(LEGITIMATE_NONOFFSET_ADDRESS_P(MODE,X)) goto ADDR; 
++/*
++  if(GET_CODE(X) == SYMBOL_REF) goto ADDR;
++*/
++
++
++/* Try machine-dependent ways of modifying an illegitimate address
++   to be legitimate.  If we find one, return the new, valid address.
++   This macro is used in only one place: `memory_address' in explow.c.  */
++
++
++#define LEGITIMIZE_ADDRESS(X,OLDX,MODE,WIN)			\
++do {								\
++  rtx new_x = brownie32_legitimize_address (X, NULL_RTX, MODE);	\
++  if (new_x)							\
++    {								\
++      X = new_x;						\
++      goto WIN;							\
++    }								\
++} while (0)
++
++
++/*
++ * DLX addresses do not depend on the machine mode they are
++ * being used in.
++ */
++#define GO_IF_MODE_DEPENDENT_ADDRESS(addr,label)
++
++/* stolen from sparc.h and modified for DLX which 
++ * has 16 bit immediates. 
++ */
++#define SMALL_INT(X) (INTVAL(X) >= -32768 && INTVAL(X) <= 32767)
++
++#define CONST_OK_FOR_LETTER_P(VALUE, C)  \
++  ((C) == 'I' ? ((VALUE) >= -32768 && (VALUE) <= 32767)  \
++   : (C) == 'J' ? (VALUE) == 0                          \
++   : (C) == 'K' ? ((VALUE) & 0xffff) == 0                \
++   : (C) == 'L' ? ((VALUE) >= 0 && (VALUE) <= 65535 )  \
++   : 0)
++
++#define LEGITIMATE_CONSTANT_P(x) (GET_CODE(x) != CONST_DOUBLE)
++
++#define CLASS_UNITS(mode, size)                                         \
++  ((GET_MODE_SIZE (mode) + (size) - 1) / (size))
++
++/* Deleted by Kenichi Nakamura
++#define CLASS_MAX_NREGS(CLASS, MODE)                                    \
++  ((CLASS) == FP_REGS                                                   \
++   ? (CLASS_UNITS (MODE, 4))                                        \
++   : CLASS_UNITS (MODE, UNITS_PER_WORD))
++*/
++
++#define CLASS_MAX_NREGS(CLASS, MODE) CLASS_UNITS (MODE, UNITS_PER_WORD)
++
++#define STACK_GROWS_DOWNWARD 1
++
++#define FRAME_GROWS_DOWNWARD 1
++/* Modified by Kenichi Nakamura */
++//#define STARTING_FRAME_OFFSET -8
++#define STARTING_FRAME_OFFSET 0
++
++#define STACK_POINTER_OFFSET 0
++
++#define INITIAL_FRAME_POINTER_OFFSET(var) { var=8; }
++
++/* Lifted from mips.h.
++ * If defined, a C expression that gives the alignment boundary, in
++ * bits, of an argument with the specified mode and type.  If it is
++ * not defined,  `PARM_BOUNDARY' is used for all arguments.  
++ */
++
++#define FUNCTION_ARG_BOUNDARY(MODE, TYPE) PARM_BOUNDARY
++
++#define FIRST_PARM_OFFSET(FNDECL) 8
++//#define STACK_POINTER_REGNUM 29
++//#define FRAME_POINTER_REGNUM 30
++//#define ARG_POINTER_REGNUM 30   /* access args with frame pointer */
++/* Modified by Kenichi Nakamura */
++#define STACK_POINTER_REGNUM B32_SP_REGNUM
++#define FRAME_POINTER_REGNUM B32_FP_REGNUM
++#define ARG_POINTER_REGNUM B32_FP_REGNUM
++   /* access args with frame pointer */
++
++/* this is required by h/w arch.  */
++#define STATIC_CHAIN_REGNUM 2
++
++#define FRAME_POINTER_REQUIRED 1
++
++#define FUNCTION_ARG(CUM, MODE, TYPE, NAMED) \
++         brownie32_function_arg (&CUM, MODE, TYPE, NAMED)
++
++
++#if 000
++// #if 0  // Changed by C.Katano Nov-24-2006
++/* 
++ * Return char/short/int in r1
++ * return float in f0
++ * return double in f0/f1.
++ * return anything else in r1.
++ */
++#define FUNCTION_VALUE(VALTYPE, FUNC)                                   \
++((TYPE_MODE(VALTYPE) == DFmode || TYPE_MODE(VALTYPE) == SFmode)?	\
++                    gen_rtx_REG(TYPE_MODE(VALTYPE),FIRST_FP_REG)        \
++:((TYPE_MODE(VALTYPE)==HImode || TYPE_MODE(VALTYPE) == QImode)?		\
++                    gen_rtx_REG(TYPE_MODE(VALTYPE), 1)			\
++:gen_rtx_REG(SImode,1)))
++// #else
++#define FUNCTION_VALUE(VALTYPE, FUNC)                                   \
++((TYPE_MODE(VALTYPE) == DFmode || TYPE_MODE(VALTYPE) == SFmode)?	\
++                    gen_rtx_REG(TYPE_MODE(VALTYPE),FIRST_FP_REG)        \
++:((TYPE_MODE(VALTYPE)==HImode || TYPE_MODE(VALTYPE) == QImode)?		\
++                    gen_rtx_REG(TYPE_MODE(VALTYPE), 4)			\
++:gen_rtx_REG(TYPE_MODE(VALTYPE), 4)))
++
++// #endif
++#endif /* 000 */
++
++/* return in r6.  */
++#define FUNCTION_VALUE(VALTYPE, FUNC)  \
++   gen_rtx_REG (TYPE_MODE (VALTYPE), B32_RV_REGNUM)
++
++
++/* return in r1 or f0. */
++/* I'm not quite sure if I'll need any of these routines anyway. */
++#if 0    // Changed by C.katano Nov-24-2006
++#define LIBCALL_VALUE(MODE)     \
++ (FLOAT_MODE_P(MODE)?gen_rtx_REG(SFmode,FIRST_FP_REG):gen_rtx_REG(SImode,1))
++#else
++//#define LIBCALL_VALUE(MODE)     
++// (FLOAT_MODE_P(MODE)?gen_rtx_REG(SFmode,FIRST_FP_REG):gen_rtx_REG(SImode,4))
++#define LIBCALL_VALUE(MODE)  gen_rtx_REG (MODE, B32_RV_REGNUM)
++
++#endif
++
++/* Changed by Kenichi Nakamura */
++
++/* Define a data type for recording info about an argument list
++   during the scan of that argument list.  This data type should
++   hold all necessary information about the function itself
++   and about the args processed so far, enough to enable macros
++   such as FUNCTION_ARG to determine where the next arg should go.  */
++
++#define CUMULATIVE_ARGS struct cum_arg
++struct cum_arg { int nbytes; int anonymous_args; };
++
++
++#define INIT_CUMULATIVE_ARGS(CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS) \
++		((CUM).nbytes = 0, (CUM).anonymous_args = 0)
++
++//  init_cumulative_args(&CUM, FNTYPE, LIBNAME)
++/*
++#define INIT_CUMULATIVE_ARGS(cum,fntype,libname) { cum = 0; }
++*/
++/*
++
++#define FUNCTION_ARG_ADVANCE(cum,mode,type,named)       \
++{ cum += UNITS_PER_WORD*((GET_MODE_SIZE(mode)+UNITS_PER_WORD-1)         \
++             /UNITS_PER_WORD) ; }
++*/
++#define FUNCTION_ARG_ADVANCE(CUM, MODE, TYPE, NAMED)	\
++ ((CUM).nbytes += ((MODE) != BLKmode			\
++  ? (GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) & -UNITS_PER_WORD	\
++  : (int_size_in_bytes (TYPE) + UNITS_PER_WORD - 1) & -UNITS_PER_WORD))
++
++
++/* When a parameter is passed in a register, stack space is still
++   allocated for it.  */
++#define REG_PARM_STACK_SPACE(DECL)	\
++		(UNITS_PER_WORD * (GP_ARG_LAST - GP_ARG_FIRST + 1))
++
++/* Define this if the above stack space is to be considered part of the
++   space allocated by the caller.  */
++#define OUTGOING_REG_PARM_STACK_SPACE
++
++
++/* Keep the stack pointer constant throughout the function.  */
++#define ACCUMULATE_OUTGOING_ARGS 1
++
++/*
++ * As is usual in C, the caller pops all the arguments.
++ */
++
++#define RETURN_POPS_ARGS(FUNDECL, FUNTYPE, STACKSIZE) 0
++
++//#define FUNCTION_ARG_PARTIAL_NREGS(cum,mode,type,named) 0
++
++
++/*
++ * All registers are passed on the stack.
++ */
++/* Symbolic macros for the first/last argument registers.  */
++
++#define GP_ARG_FIRST   B32_RP_FROM_REGNUM
++#define GP_ARG_LAST    B32_RP_TO_REGNUM
++//#define FP_ARG_FIRST 0
++//#define FP_ARG_LAST  0
++
++/* 1 if N is a possible register number for function argument passing.
++   We have no FP argument registers when soft-float.  When FP registers
++   are 32 bits, we can't directly reference the odd numbered ones.  */
++
++#define FUNCTION_ARG_REGNO_P(N)					\
++ (TARGET_QUICKCALL						\
++  ? (IN_RANGE((N), GP_ARG_FIRST, GP_ARG_LAST)     		\
++    && !fixed_regs[N])						\
++  : 0)
++
++
++/* return in r6 or r7.  */
++#define FUNCTION_VALUE_REGNO_P(REGNO)   ((REGNO) == B32_RV_REGNUM)
++
++/*
++ * Trampoline stuff, stolen from mips.h.
++ * This will need serious work.
++ *
++ */
++
++/* A C statement to output, on the stream FILE, assembler code for a
++   block of data that contains the constant parts of a trampoline. 
++   This code should not include a label--the label is taken care of
++   automatically.  */
++
++#define TRAMPOLINE_TEMPLATE(STREAM)                                      \
++{                                                                        \
++}
++
++/* A C expression for the size in bytes of the trampoline, as an
++   integer.  */
++
++#define TRAMPOLINE_SIZE (9*4)
++
++/* Alignment required for trampolines, in bits.
++
++   If you don't define this macro, the value of `BIGGEST_ALIGNMENT'
++   is used for aligning trampolines.  */
++
++/* #define TRAMPOLINE_ALIGNMENT 32 */
++
++/* A C statement to initialize the variable parts of a trampoline. 
++   ADDR is an RTX for the address of the trampoline; FNADDR is an
++   RTX for the address of the nested function; STATIC_CHAIN is an
++   RTX for the static chain value that should be passed to the
++   function when it is called.  */
++#define INITIALIZE_TRAMPOLINE(ADDR, FUNC, CHAIN)                            \
++{                                                                           \
++  rtx addr = ADDR;                                                          \
++  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 20)), FUNC);   \
++  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 24)), CHAIN);  \
++                                                                            \
++  /* Flush the instruction cache.  */                                       \
++}
++/*
++  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 28)), FUNC);   \
++  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (addr, 32)), CHAIN);  \
++*/
++/*
++  emit_library_call (gen_rtx (SYMBOL_REF, Pmode, "__gcc_flush_cache"), \
++                     0, VOIDmode, 1, addr, Pmode);                          \
++*/
++
++#define TRANSFER_FROM_TRAMPOLINE                                        \
++                                                                        \
++void                                                                    \
++__gcc_flush_cache (addr)                                                \
++     char *addr;                                                        \
++{                                                                       \
++  if (cacheflush (addr, TRAMPOLINE_SIZE, 1) < 0)                        \
++    perror ("cacheflush of trampoline code");                           \
++}
++
++/* Target CPU builtins.  */
++#define TARGET_CPU_CPP_BUILTINS()				\
++  do								\
++    {								\
++      builtin_define ("__brownie32__");                     \
++      builtin_assert ("machine=brownie32");                     \
++      builtin_assert ("cpu=brownie32");				\
++        /* Macros dependent on the C dialect.  */		\
++      if (preprocessing_asm_p ())				\
++	{							\
++          builtin_define_std ("LANGUAGE_ASSEMBLY");		\
++	  builtin_define ("_LANGUAGE_ASSEMBLY");		\
++	}							\
++      else							\
++	{							\
++          builtin_define_std ("LANGUAGE_C");			\
++	  builtin_define ("_LANGUAGE_C");			\
++	}							\
++								\
++} while (0)
++
+Index: gcc/config/brownie32/brownie32.md
+===================================================================
+RCS file: gcc/config/brownie32/brownie32.md
+diff -N gcc/config/brownie32/brownie32.md
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/brownie32.md	24 Feb 2008 13:58:33 -0000	1.9
+@@ -0,0 +1,2037 @@
++;;
++;; Brownie32.md
++;;
++;; Aaron Sawdey
++;;
++;; 1994-1995
++;;
++;; Brownie32 Machine Description 
++;; (C)Copyright 2005, 2006 Upwind Technology, Inc.
++;; (C)Copyright 2007 SRA
++;;
++;; Possible improvements:
++;;  * add define_splits for common multi-instruction sequences
++;;  * add peephole optimizations
++;;  * add functional unit descriptions and scheduling information
++;;
++;; Since parts of this come from mips.md:
++;;
++;; This file is part of GNU CC.
++;;
++;; GNU CC is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2, or (at your option)
++;; any later version.
++;;
++;; GNU CC is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with GNU CC; see the file COPYING.  If not, write to
++;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
++;;
++;;
++
++(define_constants
++  [
++   (B32_FP_REGNUM 4)	    ; Register 4 contains the frame pointer
++   (B32_SP_REGNUM 5)	    ; Register 5 contains the stack pointer
++   (B32_RV_REGNUM 6)	    ; Register 6 or 7 contains the return value
++   (B32_A_REGNUM 6)	    ; Register 6 for work
++   (B32_RP_FROM_REGNUM 8)	  ; Register 8 to 15 for the register passing.
++   (B32_RP_TO_REGNUM 15)
++  ]
++)
++
++
++;; Instruction types. Keep it simple for now; these categories
++;; correspond (roughly) with the things on the back cover of H&P.
++;;
++;;
++;; unknown
++;; load         mem load
++;; store        mem store
++;; move         reg-reg move
++;; alu          alu ops or int compares
++;; branch       conditional branch
++;; jump         unconditional branch
++;; fp           floating point op or fp compare
++;; multi        multiple different types
++;;
++
++(define_attr "type" 
++  "unknown,load,store,move,alu,branch,jump,fp,multi" 
++;;  "unknown,load,store,move,alu,branch,jump,multi" 
++  (const_string "unknown"))
++
++;
++; Define a memory unit that can process one load at a time
++; and does not come back for 2 cycles. 
++; (define_function_unit "memory" 1 1 (or (eq_attr "type" "load")
++; 				       (eq_attr "type" "store")) 2 0)
++;
++
++
++(define_attr "mode" "unknown,none,QI,HI,SI,DI,SF,DF" 
++             (const_string "unknown"))
++
++
++;; # instructions (4 bytes each)
++(define_attr "length" "" (const_int 1))
++
++(define_delay (eq_attr "type" "branch,jump")
++              [(and (eq_attr "type" "!branch,jump")
++                    (eq_attr "length" "200")) (nil) (nil)])
++
++
++;; Include predicate definitions
++
++(include "predicates.md")
++
++
++; 
++; ** AO_Comment ** 
++;(define_insn "addsf3"
++;  [(set (match_operand:SF 0 "register_operand" "=f,f,f")
++;        (plus:SF (match_operand:SF 1 "register_operand" "%f,f,f")
++;                 (match_operand:SF 2 "register_operand" "f,I,L")))]
++;  ""
++;  "@
++;   SFADD\\t%0,%1,%2
++;   SFADD\\t%0,%1,%G2
++;   SFADD\\t%0,%1,%U2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "SF")])
++;
++;(define_insn "addsf3"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (plus:SF (match_operand:SF 1 "register_operand" "%f")
++;                 (match_operand:SF 2 "register_operand" "f")))]
++;  ""
++;  "ADDI\\tR6,R6,#12\\n\\tSW\\t4(R6),%1\\n\\tSW\\t8(R6),%2\\n\\tJPL\\t___addsf3\\n\\tADDI\\tR6,R6,#-12\\n\\tADD\\t%0,R0,R4"
++;
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "SF")])
++;
++;
++;
++;
++; ** AO_Comment ** 
++;(define_insn "adddf3"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (plus:DF (match_operand:DF 1 "register_operand" "%f")
++;                (match_operand:DF 2 "register_operand" "f")))]
++;  ""
++;  "addd\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "DF")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "subsf3"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (minus:SF (match_operand:SF 1 "register_operand" "f")
++;                (match_operand:SF 2 "register_operand" "f")))]
++;  ""
++;    "sub\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;  (set_attr "mode"     "SF")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "subdf3"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (minus:DF (match_operand:DF 1 "register_operand" "f")
++;                 (match_operand:DF 2 "register_operand" "f")))]
++;  ""
++;  "subd\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "DF")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "mulsf3"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (mult:SF (match_operand:SF 1 "register_operand" "%f")
++;                 (match_operand:SF 2 "register_operand" "f")))]
++;  ""
++;  "mul\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "SF")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "muldf3"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (mult:DF (match_operand:DF 1 "register_operand" "%f")
++;                 (match_operand:DF 2 "register_operand" "f")))]
++;  ""
++;  "mul\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "DF")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "divsf3"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (div:SF (match_operand:SF 1 "register_operand" "f")
++;                 (match_operand:SF 2 "register_operand" "f")))]
++;  ""
++;  "div\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "SF")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "divdf3"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (div:DF (match_operand:DF 1 "register_operand" "f")
++;                 (match_operand:DF 2 "register_operand" "f")))]
++;  ""
++;  "div\\t%0,%1,%2"
++;  [(set_attr "type"     "fp")
++;   (set_attr "mode"     "DF")])
++
++
++;
++; ** AO_Comment ** 
++(define_insn "addsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (plus:SI (match_operand:SI 1 "register_operand" "%d,d")
++                 (match_operand:SI 2 "nonmemory_operand" "d,I")))]
++  ""
++  "@
++   add\\t%0,%1,%2
++   addi\\t%0,%1,%G2"
++  [(set_attr "type"     "alu")
++   (set_attr "mode"     "SI")])
++;
++; ** AO_Comment ** 
++(define_insn "subsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d,d")
++        (minus:SI (match_operand:SI 1 "register_operand" "d,d,d")
++                 (match_operand:SI 2 "nonmemory_operand" "d,I,L")))]
++  ""
++;;  "@
++;;   sub\\t%0,%1,%2
++;;   subi\\t%0,%1,%G2
++;;   subui\\t%0,%1,%U2"
++  "@
++   sub\\t%0,%1,%2
++   subi\\t%0,%1,%G2
++   subi\\t%0,%1,%U2"
++  [(set_attr "type"     "alu")
++   (set_attr "mode"     "SI")])
++
++(define_insn "andsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (and:SI (match_operand:SI 1 "register_operand" "%d,d")
++                (match_operand:SI 2 "nonmemory_operand" "d,L")))]
++  ""
++  "@
++   and\\t%0,%1,%2
++   andi\\t%0,%1,%U2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++(define_insn "iorsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (ior:SI (match_operand:SI 1 "register_operand" "%d,d")
++                (match_operand:SI 2 "nonmemory_operand" "d,L")))]
++  ""
++  "@
++   or\\t%0,%1,%2
++   ori\\t%0,%1,%U2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++(define_insn "xorsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (xor:SI (match_operand:SI 1 "register_operand" "%d,d")
++                (match_operand:SI 2 "nonmemory_operand" "d,L")))]
++  ""
++  "@
++   xor\\t%0,%1,%2
++   xori\\t%0,%1,%U2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;;
++(define_insn "nandsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (not:SI (and:SI (match_operand:SI 1 "register_operand" "%d")
++	                (match_operand:SI 2 "register_operand" "d"))))]
++  ""
++  "nand\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")
++   (set_attr "length" "1")])
++
++;;
++(define_insn "norsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (not:SI (ior:SI (match_operand:SI 1 "register_operand" "%d")
++	                (match_operand:SI 2 "register_operand" "d"))))]
++  ""
++  "nor\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")
++   (set_attr "length" "1")])
++
++
++
++
++;;
++;; -x = 0-x
++;; This is ok for integers.
++;;
++
++
++(define_insn "negsi2"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (neg:SI (match_operand:SI 1 "register_operand" "d")))]
++  ""
++  "sub\\t%0,r0,%1"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;;
++;; -x = 0-x
++;; Alarm bells should be going off because this isn't
++;; true for floating point numbers! Unfortunately DLX
++;; doesn't have a "neg" instruction and the only better
++;; solution is to multiply by -1 which is very painful.
++;;
++;
++; ** AO_Comment ** 
++;(define_insn "negsf2"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (neg:SF (match_operand:SF 1 "register_operand" "f")))
++;   (clobber (match_scratch:SF 2 "=&f"))]
++;  ""
++;  "movi2fp\\t%2,r0\\n\\tcvti2f\\t%2,%2\\n\\tsubf\\t%0,%2,%1"
++;  [(set_attr "type" "alu")
++;   (set_attr "mode" "SF")
++;   (set_attr "length" "3")])
++
++;
++
++;(define_insn "negdf2"
++;  [(set (match_operand:DF 0 "register_operand" "=r")
++;        (neg:DF (match_operand:DF 1 "register_operand" "r")))
++;    (clobber (match_scratch:DF 2 "=&r"))]
++;  ""
++;{
++;     return "addi\\t%2,r0,#-32768\\n\\tlsoi\\t%2,%2,#0\\n\\txor\\t%0,%1,%2";
++;}
++;  [(set_attr "type" "alu")
++;   (set_attr "mode" "DF")
++;   (set_attr "length" "6")])
++
++(define_insn "one_cmplqi2"
++  [(set (match_operand:QI 0 "register_operand" "=d")
++        (not:QI (match_operand:QI 1 "register_operand" "d")))]
++  ""
++  "xori\\t%0,%1,#0x00ff"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "QI")
++   (set_attr "length" "1")])
++
++(define_insn "one_cmplhi2"
++  [(set (match_operand:HI 0 "register_operand" "=d")
++        (not:HI (match_operand:HI 1 "register_operand" "d")))]
++  ""
++  "xori\\t%0,%1,#0xffff"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "HI")])
++
++
++(define_insn "one_cmplsi2"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (not:SI (match_operand:SI 1 "register_operand" "d")))]
++  ""
++  "sub\\t%0,r0,%1\\n\\tsubi\\t%0,%0,#1"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")
++   (set_attr "length" "2")])
++
++
++(define_insn "ashlsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (ashift:SI (match_operand:SI 1 "register_operand" "d,d")
++                   (match_operand:SI 2 "nonmemory_operand" "d,I")))]
++  ""
++;  "@
++;   sll\\t%0,%1,%2
++;   slli\\t%0,%1,%2"
++  "@
++  lls\\t%0,%1,%2
++  llsi\\t%0,%1,%G2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++;(define_insn "lshlsi3"
++;  [(set (match_operand:SI 0 "register_operand" "=d,d")
++;        (lshift:SI (match_operand:SI 1 "register_operand" "d,d")
++;                   (match_operand:SI 2 "nonmemory_operand" "d,I")))]
++;  ""
++;  "@
++;   sll\\t%0,%1,%2
++;   slli\\t%0,%1,%2"
++;  "@
++;  lls\\t%0,%1,%2
++;  llsi\\t%0,%1,%G2"
++;  [(set_attr "type" "alu")
++;   (set_attr "mode" "SI")])
++
++
++;
++; ** AO_Comment ** 
++(define_insn "ashrsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (ashiftrt:SI (match_operand:SI 1 "register_operand" "d,d")
++                     (match_operand:SI 2 "nonmemory_operand" "d,I")))]
++  ""
++;  "@
++;   sra\\t%0,%1,%2
++;   srai\\t%0,%1,%2"
++   "@
++    ars\\t%0,%1,%2
++    arsi\\t%0,%1,%G2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;
++; ** AO_Comment ** 
++(define_insn "lshrsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (lshiftrt:SI (match_operand:SI 1 "register_operand" "d,d")
++                     (match_operand:SI 2 "nonmemory_operand" "d,I")))]
++  ""
++;  "@
++;   srl\\t%0,%1,%2
++;   srli\\t%0,%1,%2"
++   "@
++   lrs\\t%0,%1,%2
++   lrsi\\t%0,%1,%G2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "mulsi3"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (mult:SI (match_operand:SI 1 "register_operand" "d")
++;                 (match_operand:SI 2 "register_operand" "d")))
++;  (clobber (match_scratch:SF 3 "=&f"))
++;   (clobber (match_scratch:SF 4 "=&f"))]
++;  ""
++;  "movi2fp\\t%3,%1\\n\\
++;\\tmovi2fp\\t%4,%2\\n\\
++;\\tmult\\t%3,%3,%4\\n\\
++;\\tmovfp2i\\t%0,%3"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SI")
++;   (set_attr "length" "4")])
++;
++(define_insn "mulsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (mult:SI (match_operand:SI 1 "register_operand" "d")
++                 (match_operand:SI 2 "register_operand" "d")))]
++  ""
++  "mul\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "divsi3"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (div:SI (match_operand:SI 1 "register_operand" "d")
++;                 (match_operand:SI 2 "register_operand" "d")))
++;   (clobber (match_scratch:SF 3 "=&f"))
++;   (clobber (match_scratch:SF 4 "=&f"))]
++;  ""
++;  "movi2fp\\t%3,%1\\n\\
++;\\tmovi2fp\\t%4,%2\\n\\
++;\\tdiv\\t%3,%3,%4\\n\\
++;\\tmovfp2i\\t%0,%3"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SI")
++;   (set_attr "length" "4")])
++;
++;(define_insn "udivsi3"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (udiv:SI (match_operand:SI 1 "register_operand" "d")
++;                 (match_operand:SI 2 "register_operand" "d")))]
++;  ""
++;  "div\\t%0,%1,%2\\n\\tnop"
++;  [(set_attr "type" "alu")
++;   (set_attr "mode" "SI")])
++
++
++
++(define_insn "divsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (div:SI (match_operand:SI 1 "register_operand" "d")
++                 (match_operand:SI 2 "register_operand" "d")))]
++  ""
++  "div\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++(define_insn "udivsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (udiv:SI (match_operand:SI 1 "register_operand" "d")
++                 (match_operand:SI 2 "register_operand" "d")))]
++  ""
++  "divu\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;
++;(define_insn "udivsi3"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (udiv:SI (match_operand:SI 1 "register_operand" "d")
++;                 (match_operand:SI 2 "register_operand" "d")))
++;   (clobber (match_scratch:SF 3 "=&f"))
++;   (clobber (match_scratch:SF 4 "=&f"))]
++;  ""
++;  "movi2fp\\t%3,%1\\n\\
++;\\tmovi2fp\\t%4,%2\\n\\
++;\\tdivu\\t%3,%3,%4\\n\\
++;\\tmovfp2i\\t%0,%3"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SI")
++;   (set_attr "length" "4")])
++;
++
++
++(define_insn "modsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (mod:SI (match_operand:SI 1 "register_operand" "d")
++                 (match_operand:SI 2 "register_operand" "d")))]
++  ""
++  "mod\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++(define_insn "umodsi3"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (umod:SI (match_operand:SI 1 "register_operand" "d")
++                 (match_operand:SI 2 "register_operand" "d")))]
++  ""
++  "modu\\t%0,%1,%2"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++;(define_insn "umodsi3"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (umod:SI (match_operand:SI 1 "register_operand" "d")
++;                 (match_operand:SI 2 "register_operand" "d")))]
++;  ""
++;  "mod\\t%0,%1,%2"
++;  [(set_attr "type" "alu")
++;   (set_attr "mode" "SI")])
++
++
++;;
++;; Conversion patterns
++;;
++
++;
++; ** AO_Comment ** 0525
++;;(define_insn "floatsisf2"
++;x(define_insn "floatsisf"
++;x  [(set (match_operand:SF 0 "register_operand" "=f")
++;x        (float:SF (match_operand:SI 1 "register_operand" "d")))]
++;x  ""
++;x;;  "movi2fp\\t%0,%1\\n\\tcvti2f\\t%0,%0"
++;x  "add\\t%0,r1,%1\\n\\tadd\\t%0,r2,%0"
++;x  [(set_attr "type" "fp")
++;x   (set_attr "mode" "SF")
++;x   (set_attr "length" "2")])
++;
++
++;
++; ** AO_Comment ** 
++;;(define_insn "floatsidf2"
++;(define_insn "floatsidf2"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (float:DF (match_operand:SI 1 "register_operand" "d")))]
++;  ""
++;;  "movi2fp\\t%0,%1\\n\\tcvti2d\\t%0,%0"
++;  "add\\t%0,r3,%1\\n\\tadd\\t%0,r4,%0"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "DF")
++;   (set_attr "length" "2")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "fix_truncsfsi2"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (fix:SI (match_operand:SF 1 "register_operand" "+f"))
++;	(clobber (match_scratch:SF 2 "=&f"))]
++;  ""
++;  "cvtf2i\\t%2,%1\\n\\tmovfp2i\\t%0,%2\\n"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SF")
++;   (set_attr "length" "2")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "fix_truncdfsi2"
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;        (fix:SI (match_operand:DF 1 "register_operand" "+f")))
++;   (clobber (match_scratch:DF 2 "=&f"))]
++;  ""
++;  "cvtd2i\\t%2,%1\\n\\tmovfp2i\\t%0,%2\\n"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "DF")
++;   (set_attr "length" "2")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "truncdfsf2"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (float_truncate:SF (match_operand:DF 1 "register_operand" "f")))]
++;  ""
++;  "cvtd2f\\t%0,%1"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SF")])
++;(define_insn "truncdfsf2"
++;  [(set (match_operand:SF 0 "register_operand" "=f")
++;        (float_truncate:SF (match_operand:DF 1 "register_operand" "f")))]
++;  ""
++;  "ADD\\t%0,r0,%1"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SF")])
++;
++
++(define_insn "truncsihi2"
++  [(set (match_operand:HI 0 "general_operand" "=d,m")
++        (truncate:HI (match_operand:SI 1 "register_operand" "d,d")))]
++  ""
++  "@
++   andi\\t%0,%1,#0xffff
++   sh\\t%0,%1"
++  [(set_attr "type" "alu,store")
++   (set_attr "mode" "HI")
++   (set_attr "length" "2")])
++
++(define_insn "truncsiqi2"
++  [(set (match_operand:QI 0 "general_operand" "=d,m")
++        (truncate:QI (match_operand:SI 1 "register_operand" "d,d")))]
++  ""
++  "@
++   andi\\t%0,%1,#0x00ff
++   sb\\t%0,%1"
++  [(set_attr "type" "alu,store")
++   (set_attr "mode" "QI")])
++
++(define_insn "trunchiqi2"
++  [(set (match_operand:QI 0 "general_operand" "=d,m")
++        (truncate:QI (match_operand:HI 1 "register_operand" "d,d")))]
++  ""
++  "@
++   andi\\t%0,%1,#0x00ff
++   sb\\t%0,%1"
++  [(set_attr "type" "alu,store")
++   (set_attr "mode" "QI")])
++
++;
++; ** AO_Comment ** 
++(define_insn "zero_extendqihi2"
++  [(set (match_operand:HI 0 "register_operand" "=d,d")
++        (zero_extend:HI (match_operand:QI 1 "general_operand" "d,m")))]
++  ""
++;;  "@
++;;   andi\\t%0,%1,#0x00ff
++;;   lbu\\t%0,%1"
++;
++;;  "@
++;;   andi\\t%0,%1,#0x00ff
++;;   lb\\t%0,%1"
++  "@
++   andi\\t%0,%1,#0x00ff
++   lb\\t%0,%1\\n\\tnop\\n\\tandi\\t%0,%0,#0x00ff"
++;
++  [(set_attr "type" "alu,load")
++   (set_attr "mode" "HI")
++   (set_attr "length" "1,2")])
++
++;
++; ** AO_Comment ** 
++(define_insn "zero_extendhisi2"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (zero_extend:SI (match_operand:HI 1 "general_operand" "d,m")))]
++  ""
++;;  "@
++;;   andi\\t%0,%1,#0xffff
++;;   lhu\\t%0,%1"
++;
++;;  "@
++;;   andi\\t%0,%1,#0xffff
++;;   lh\\t%0,%1"
++;
++  "@
++   andi\\t%0,%1,#0xffff
++   lh\\t%0,%1\\n\\tnop\\n\\tandi\\t%0,%0,#0xffff"
++;
++  [(set_attr "type" "alu,load")
++   (set_attr "mode" "SI")
++   (set_attr "length" "1,2")])
++
++;
++; ** AO_Comment ** 
++(define_insn "zero_extendqisi2"
++  [(set (match_operand:SI 0 "register_operand" "=d,d")
++        (zero_extend:SI (match_operand:QI 1 "general_operand" "d,m")))]
++  ""
++;;  "@
++;;   andi\\t%0,%1,#0x00ff
++;;   lbu\\t%0,%1"
++;
++;;  "@
++;;   andi\\t%0,%1,#0x00ff
++;;  lb\\t%0,%1"
++;
++  "@
++   andi\\t%0,%1,#0x00ff
++   lb\\t%0,%1\\n\\tnop\\n\\tandi\\t%0,%0,#0x00ff"
++;
++  [(set_attr "type" "alu,load")
++   (set_attr "mode" "SI,SI")
++   (set_attr "length" "1,2")])
++
++;;;
++(define_insn "extendqisi2"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (sign_extend:SI (match_operand:QI 1 "register_operand" "d")))]
++  ""
++  "exbw\\t%0,%1"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")
++   (set_attr "length" "2")])
++
++;;;
++(define_insn "extendhisi2"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (sign_extend:SI (match_operand:HI 1 "register_operand" "d")))]
++  ""
++  "exhw\\t%0,%1"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")
++   (set_attr "length" "2")])
++
++
++;
++; ** AO_Comment ** 
++(define_insn "extendqihi2"
++  [(set (match_operand:HI 0 "register_operand" "=d")
++        (sign_extend:HI (match_operand:QI 1 "register_operand" "d")))]
++  ""
++;;  "slli\\t%0,%1,#24\\n\\tsrai\\t%0,%0,#24\\n\\tandi\\t%0,%0,#0xffff"
++;;00  "llsi\\t%0,%1,#24\\n\\tlrsi\\t%0,%0,#24\\n\\tandi\\t%0,%0,#0xffff"
++   "llsi\\t%0,%1,#24\;arsi\\t%0,%0,#24\;andi\\t%0,%0,#0xffff"
++;
++  [(set_attr "type" "alu")
++   (set_attr "mode" "HI")
++   (set_attr "length" "3")])
++
++
++;
++; ** AO_Comment ** 
++;(define_insn "extendsfdf2"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (float_extend:DF (match_operand:SF 1 "register_operand" "f")))]
++;  ""
++;  "cvtf2d\\t%0,%1"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "DF")])
++;
++;(define_insn "extendsfdf2"
++;  [(set (match_operand:DF 0 "register_operand" "=f")
++;        (float_extend:DF (match_operand:SF 1 "register_operand" "f")))]
++;  ""
++;  "ADD\\t%0,r0,%1"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "DF")])
++
++
++;;
++;; move instructions:
++;; mem-reg, reg-mem, imm-reg
++;;
++;; The standard "movsi" pattern for RTL generation. It
++;; makes sure one of the operands is in a register, but 
++;; avoids trying to do this later during compilation when
++;; the register allocation is complete.
++;;
++;; This pattern was lifted almost verbatim from the MIPS machine
++;; description.
++;;
++
++(define_expand "movsi"
++  [(set (match_operand:SI 0 "nonimmediate_operand" "")
++        (match_operand:SI 1 "general_operand" ""))]
++  ""
++  "
++{
++/*
++   rtx x = operands[1];
++     addi    r8,r0,%hi(_siopcb_table-20)
++       lsoi    r8,r8,%lo(_siopcb_table-20)
++ ->
++       addi    r7,r0,%hi(_siopcb_table)
++       lsoi    r7,r7,%lo(_siopcb_table)
++       addi    r7,r7,#-20 
++   if (((reload_in_progress | reload_completed) == 0)
++           && GET_CODE (x) == CONST
++           && GET_CODE (XEXP (x, 0)) == PLUS
++          && GET_CODE (XEXP (XEXP (x, 0), 1)) == CONST_INT
++          && ! CONSTANT_ADDRESS_P (XEXP (XEXP (x, 0), 1)))
++    {
++      rtx temp = force_reg (SImode, XEXP (XEXP (x, 0), 0));
++      rtx y =force_reg (SImode,
++         gen_rtx_PLUS (SImode, temp, XEXP (XEXP (x, 0), 1)));
++      temp = emit_move_insn (operands[0], y);
++      DONE;
++    }
++*/
++  if ((reload_in_progress | reload_completed) == 0
++      && !register_operand (operands[0], SImode)
++      && !register_operand (operands[1], SImode))
++    {
++      rtx temp = force_reg (SImode, operands[1]);
++      temp = emit_move_insn (operands[0], temp);
++      DONE;
++    }
++}")
++
++;;
++;; This is used to match against RTL during assembly code
++;; generation. It knows how to move floats in and out of 
++;; integer registers.
++;;
++;; We have to be sure to set the length correctly. Otherwise,
++;; the delay slot filler will try to move something into a delay
++;; slot that produces more than one DLX instruction, which would 
++;; produce incorrect code. So when we generate an addui/lhi sequence
++;; to load a constant, we have to make sure the length is set to 2.
++;;
++
++;
++;AO_Change
++(define_insn "movsi_general"
++  [(set (match_operand:SI 0 "general_operand" "=d,d,d,d,m,d")
++        (match_operand:SI 1 "general_operand" "I,L,i,m,d,d"))]
++  ""
++  "*
++{ 
++  switch(which_alternative)
++   {
++     case 0:
++       return \"addi\\t%0,r0,%G1\";
++     case 1:
++       return \"lsoi\\t%0,r0,%U1\";
++     case 2:
++       if(GET_CODE(operands[1]) == CONST_INT)
++        {
++           return \"addi\\t%0,r0,%H1\\n\\tlsoi\\t%0,%0,%L1\";
++        }
++       else
++        {
++           return \"addi\\t%0,r0,%%hi(%1)\\n\\tlsoi\\t%0,%0,%%lo(%1)\";
++        }
++     case 3:
++        return \"lw\\t%0,%1\\n\\tnop\";
++     case 4:
++        return \"sw\\t%0,%1\";
++     case 5:
++        return \"add\\t%0,r0,%1\";
++     default:
++        return \"nOp\";
++   }
++}"
++  [(set_attr "type" "move,move,move,load,store,move")
++   (set_attr "mode" "SI")
++   (set_attr "length" "1,1,3,2,1,1")])
++
++;;
++;; Move half words.
++;;
++(define_expand "movhi"
++  [(set (match_operand:HI 0 "nonimmediate_operand" "")
++        (match_operand:HI 1 "general_operand" ""))]
++  ""
++  "
++{
++  if ((reload_in_progress | reload_completed) == 0
++      && !register_operand (operands[0], HImode)
++      && !register_operand (operands[1], HImode))
++    {
++      rtx temp = force_reg (HImode, operands[1]);
++      temp = emit_move_insn (operands[0], temp);
++      DONE;
++    }
++}")
++
++(define_insn "movhi_general"
++  [(set (match_operand:HI 0 "general_operand" "=d,d,m,d")
++        (match_operand:HI 1 "general_operand"  "i,m,d,d"))]
++  ""
++  "*
++{ 
++  switch(which_alternative)
++   {
++     case 0:
++        return \"addi\\t%0,r0,%G1\";
++     case 1:
++        return \"lh\\t%0,%1\\n\\tnop\";
++     case 2:
++        return \"sh\\t%0,%1\";
++     case 3:
++        return \"add\\t%0,r0,%1\";
++   }
++
++}"
++  [(set_attr "type" "move,load,store,move")
++   (set_attr "mode" "HI")
++   (set_attr "length" "1,2,1,1")])
++;;
++;; move bytes.
++;;
++(define_expand "movqi"
++  [(set (match_operand:QI 0 "nonimmediate_operand" "")
++        (match_operand:QI 1 "general_operand" ""))]
++  ""
++  "
++{
++  if ((reload_in_progress | reload_completed) == 0
++      && !register_operand (operands[0], QImode)
++      && !register_operand (operands[1], QImode))
++    {
++      rtx temp = force_reg (QImode, operands[1]);
++      temp = emit_move_insn (operands[0], temp);
++      DONE;
++    }
++}")
++
++(define_insn "movqi_general"
++  [(set (match_operand:QI 0 "general_operand" "=d,d,m,d")
++        (match_operand:QI 1 "general_operand"  "i,m,d,d"))]
++  ""
++  "*
++{ 
++  switch(which_alternative)
++   {
++     case 0:
++        return \"addi\\t%0,r0,(%1)&0xff\";
++     case 1:
++         return \"lb\\t%0,%1\\n\\tnop\";
++      case 2:
++        return \"sb\\t%0,%1\";
++     case 3:
++        return \"add\\t%0,r0,%1\";
++   }
++
++}"
++  [(set_attr "type" "move,load,store,move")
++   (set_attr "mode" "QI")
++   (set_attr "length" "1,2,1,1")])
++
++;;
++;; Move floats.
++;;
++;
++;
++; ** AO_Comment ** 
++(define_expand "movsf"
++  [(set (match_operand:SF 0 "general_operand" "")
++        (match_operand:SF 1 "general_operand" ""))]
++  ""
++  "
++{
++  if ((reload_in_progress | reload_completed) == 0
++      && !register_operand (operands[0], SFmode)
++      && !register_operand (operands[1], SFmode))
++    {
++      rtx temp = force_reg (SFmode, operands[1]);
++      temp = emit_move_insn (operands[0], temp);
++      DONE;
++    }
++}")
++
++
++;;
++;; This pattern has to handle the strange special case of
++;; moving a float value into r1 to return it. This is required
++;; to be compatible with Peter Dahl's C-Regs C Compiler.
++;;  alter [0, 7]
++;
++; ** AO_Comment ** 
++(define_insn "movsf_general"
++  [(set (match_operand:SF 0 "general_operand" "=d,m,d,d,d,d,d")
++        (match_operand:SF 1 "general_operand"  "m,d,d,i,E,F,I"))]
++  ""
++  "*
++{ 
++  switch(which_alternative)
++   {
++     case 0:
++        return \"lw\\t%0,%1\\n\\tnop\";
++     case 1:
++         return \"sw\\t%0,%1\";
++     case 2:
++         return \"add\\t%0,r0,%1\";
++     case 3:
++       if(GET_CODE(operands[1]) == CONST_INT)
++        {
++         return \"lh\\t%0,%H1\\n\\tnop\\n\\taddi\\t%0,%0,%L1\";
++        }
++       else
++        {
++           return \"addi\\t%0,r0,%U1\\n\\taddi\\t%0,%0,%U1\";
++        }
++     case 4:
++        return \"lw\\t%0,%1\\n\\tnop\";
++     case 5:
++        return \"lw\\t%0,%1\\n\\tnop\";
++     case 6:
++        return \"lw\\t%0,%1\\n\\tnop\";
++     default:
++	abort();
++
++   }
++}"
++  [(set_attr "type" "load,store,move,move,move,move,move")
++   (set_attr "mode" "SF")
++   (set_attr "length" "2,1,1,3,3,3,3")])
++
++
++;
++; ** AO_Comment ** 
++;(define_split 
++;  [(set (match_operand:DF 0 "general_operand" "")
++;	(match_operand:DF 1 "general_operand" ""))]
++;  "1"
++;  [(const_int 1)]
++;{
++;  mips_split_64bit_move (operands[0], operands[1]);
++;  DONE;
++;})
++;
++;(define_expand "movdf"
++; [(set (match_operand:DF 0 "general_operand" "")
++;       (match_operand:DF 1 "general_operand" ""))]
++; ""
++; "
++;{
++;  if ((reload_in_progress | reload_completed) == 0
++;      && !register_operand (operands[0], DFmode)
++;      && !register_operand (operands[1], DFmode))
++;    {
++;      rtx temp = force_reg (DFmode, operands[1]);
++;      temp = emit_move_insn (operands[0], temp);
++;      DONE;
++;    }
++;}")
++;;;
++;;; ** AO_Comment ** 
++;(define_expand "movdf"
++;  [(set (match_operand:DF 0 "general_operand" "")
++;        (match_operand:DF 1 "general_operand" ""))]
++;  ""
++;  "")
++;  [(set (match_operand:DF 0 "general_operand" "=f,o,r,=r,o,=d")
++;        (match_operand:DF 1 "general_operand"  "o,f,r,o,r,o"))]
++;(define_insn "movdf"
++;  [(set (match_operand:DF 0 "general_operand" "=f,m,=r,=r,m,=d")
++;        (match_operand:DF 1 "general_operand"  "m,f,r,m,r,m"))]
++;  ""
++(define_insn "movdf_general"
++  [(set (match_operand:DI 0 "general_operand" "")
++        (match_operand:DI 1 "general_operand" ""))
++        (clobber (match_scratch:SI 2 "=&r"))]
++  ""
++{ 
++  return output_move_double (operands);
++})
++;   [(set_attr "type" "load,store,move,load,store,load")
++;    (set_attr "mode" "DF")
++;    (set_attr "length" "6,4,4,6,4,6")])
++;(define_insn ""
++;  [(set (match_operand:DF 0 "general_operand" "=f,m")
++;        (match_operand:DF 1 "general_operand"  "m,f"))]
++;  ""
++;{ 
++;  switch(which_alternative)
++;   {
++;     case 0:
++;       rtx xoperands[2];
++;       xoperands[0] = gen_rtx_REG (SFmode, REGNO (operands[0]) + 1);
++;        output_asm_insn ("lw %0,%@", xoperands);
++;        output_asm_insn ("lw %0,%-", operands);
++;        return \"nop\";
++;     case 1:
++;        rtx xoperands[2];
++;        xoperands[0] = gen_rtx_REG (SFmode, REGNO (operands[0]) + 1);
++;        output_asm_insn ("sw %@,%0", xoperands);
++;        output_asm_insn ("sw %-,%0", operands);
++;        return \"nop\";
++;   }
++;})
++;  [(set_attr "type" "load,store,move,move,move,move,move,move,move,move,move")
++;   (set_attr "mode" "DF")
++;   (set_attr "length" "2,1,1,3,3,3,3,1,1,1,1")])
++
++;
++;
++;;
++;; define_split for splitting addui/lhi pairs.
++;;
++;
++; These don't work all the time.
++;
++
++;;  (define_split 
++;;    [(set (match_operand:SI 0 "register_operand" "=&d")
++;;          (match_operand:SI 1 "immediate_operand" "i"))]
++;;    "!(GET_CODE(operands[1])==CONST_INT && SMALL_INT(operands[1]))"
++;;    [(set (match_dup 0) (zero_extract:SI (match_dup 1) 
++;;                         (const_int 16) (const_int 0)))
++;;     (set (match_dup 0) (ior:SI (zero_extract:SI (match_dup 0)
++;;                                 (const_int 16) (const_int 0))
++;;                                (zero_extract:SI (match_dup 1)
++;;                                 (const_int 16) (const_int 16))))]
++;;    "")
++;;  
++;;  (define_insn "addui_split"
++;;    [(set (match_operand:SI 0 "register_operand" "=d") 
++;;          (zero_extract:SI (match_operand:SI 1 "" "") 
++;;                           (const_int 16) (const_int 0)))]
++;;    ""
++;;    "*
++;;  {
++;;     if(GET_CODE(operands[1]) == CONST_INT)
++;;       return \"addui\\t%0,r0,%L1\\t; split\";
++;;     else
++;;       return \"addui\\t%0,r0,(%1)&0xffff\\t; split\";  }"
++;;    [(set_attr "type" "alu")
++;;     (set_attr "mode" "SI")
++;;     (set_attr "length" "1")])
++;;  
++;;  (define_insn "lhi_split"
++;;    [(set (match_operand:SI 0 "register_operand" "=&d") 
++;;          (ior:SI (zero_extract:SI (match_dup 0) (const_int 16) (const_int 0))
++;;                 (zero_extract:SI (match_operand:SI 1 "immediate_operand" "i")
++;;                                 (const_int 16) (const_int 16))))]
++;;    ""
++;;    "*
++;;  {
++;;     if(GET_CODE(operands[1]) == CONST_INT)
++;;       return \"lhi\\t%0,%H1\\t; split\";
++;;     else
++;;       return \"lhi\\t%0,((%1)>>16)&0xffff\\t; split\";  }"
++;;    [(set_attr "type" "alu")
++;;     (set_attr "mode" "SI")
++;;     (set_attr "length" "1")])
++
++;;
++;; No-Op
++;;
++
++(define_insn "nop"
++  [(const_int 0)]
++  ""
++  "nop"
++  [(set_attr "type"     "alu")
++   (set_attr "mode"     "none")
++   (set_attr "length"   "1")])
++
++;;
++;; unconditional branches and such.
++;;
++
++;
++; ** AO_Comment ** 
++(define_insn "indirect_jump"
++  [(set (pc) (match_operand:SI 0 "register_operand" "d"))]
++  ""
++  "jpr\\t%0%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++
++;
++; ** AO_Comment ** 
++(define_insn "jump"
++  [(set (pc)
++        (label_ref (match_operand 0 "" "")))]
++  ""
++;  "*
++;{
++;  if (GET_CODE (operands[0]) == REG)
++;   return \"jr\\t%0%(\";
++;  else
++;    return \"j\\t%0%(\";
++;}"
++  "*
++{
++  if (GET_CODE (operands[0]) == REG)
++   return \"jpr\\t%0%(\";
++  else
++   return \"jp\\t%0%(\";
++}"
++  [(set_attr "type"     "jump")
++   (set_attr "mode"     "none")])
++
++;;
++;; calls
++;;
++
++;
++; ** AO_Comment ** 
++  (define_insn "call_value"
++    [(parallel [(set (match_operand 0 "register_operand" "=d")
++                     (call (match_operand 1 "sym_ref_mem_operand" "")
++                          (match_operand 2 "" "i")))
++                (clobber (reg:SI 3))])]
++    ""
++    "jpl\\t%S1%("
++    [(set_attr "type" "jump")
++     (set_attr "mode" "none")])
++
++;    "jpl\\t%S1%(\\n\\tadd\\tr8,r0,r4"
++
++;
++; ** AO_Comment ** 
++(define_insn "call"
++[(parallel [(call (match_operand 0 "sym_ref_mem_operand" "")
++                  (match_operand 1 "" "i"))
++              (clobber (reg:SI 3))])]
++  ""
++  "jpl\\t%S0%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++   
++;
++; ** AO_Comment ** 
++(define_insn "call_value_indirect"
++  [(parallel [(set (match_operand 0 "register_operand" "=d")
++                   (call (mem:QI (match_operand 1 "register_operand" "d"))
++                         (match_operand 2 "" "i")))
++              (clobber (reg:SI 3))])]
++  ""
++  "jprl\\t%1%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++
++;
++; ** AO_Comment ** 
++(define_insn "call_indirect"
++[(parallel [(call (mem:QI (match_operand 0 "register_operand" "d"))
++                  (match_operand 1 "" "i"))
++              (clobber (reg:SI 3))])]
++  ""
++  "jprl\\t%0%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++;;
++;; RTL for this is generated by the define_expand for call_value.
++;;
++
++;;
++;; calls that return int in r1
++;;
++;
++; ** AO_Comment ** 
++(define_insn "call_val_internal_return_r4"
++[(parallel [(set (reg:SI 1)
++                  (call (match_operand 0 "sym_ref_mem_operand" "")
++                        (match_operand 1 "" "i")))
++	    (clobber (reg:SI 3))])]
++  ""
++  "jpl\\t%S0%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++
++;
++; ** AO_Comment ** 
++(define_insn "call_val_internal_return_r4_halfword"
++[(parallel [(set (reg:HI 1)
++                  (call (match_operand 0 "sym_ref_mem_operand" "")
++                        (match_operand 1 "" "i")))
++	    (clobber (reg:SI 3))])]
++  ""
++  "jpl\\t%S0%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++
++;
++; ** AO_Comment ** 
++(define_insn "call_val_internal_return_r4_quarterword"
++[(parallel [(set (reg:QI 1)
++                  (call (match_operand 0 "sym_ref_mem_operand" "")
++                        (match_operand 1 "" "i")))
++	    (clobber (reg:SI 3))])]
++  ""
++  "jpl\\t%S0%("
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++;;
++;; calls that return float in f0
++;;
++;
++; ** AO_Comment ** 
++;(define_insn "call_val_internal_return_f0_float"
++;[(parallel [(set (reg:SF 32)
++;                  (call (match_operand 0 "sym_ref_mem_operand" "")
++;                        (match_operand 1 "" "i")))
++;	    (clobber (reg:SI 31))])]
++;  ""
++;  "jpl\\t%S0%("
++;  [(set_attr "type" "jump")
++;   (set_attr "mode" "none")])
++;
++;
++;;
++;; calls that return double in f0/f1
++;;
++;
++; ** AO_Comment ** 
++;(define_insn "call_val_internal_return_f0f1"
++;[(parallel [(set (reg:DF 32)
++;                   (call (match_operand 0 "sym_ref_mem_operand" "")
++;                         (match_operand 1 "" "i")))
++;	    (clobber (reg:SI 31))])]
++;  ""
++;  "jpl\\t%S0%(\\n"
++;  [(set_attr "type" "jump")
++;   (set_attr "mode" "none")])
++;
++;;
++;; calls that don't return a value.
++;;
++;
++; ** AO_Comment ** 
++(define_insn "call_val_internal_no_return"
++  [(call (match_operand 0 "sym_ref_mem_operand" "")
++         (match_operand 1 "" "i"))]
++  ""
++  "jpl\\t%S0%("
++;;;"addi\\tr6,r6,#-4\\n\\tsw\\t(r6),r3\\n\\tjpl\\t%S0%(\\n\\tlw\\tr3,(r6)\\n\\taddi\\tr6,r6,#4"
++
++  [(set_attr "type" "jump")
++   (set_attr "mode" "none")])
++
++;;
++;; tablejump insn; used in generating code for switches.
++;;
++;
++; ** AO_Comment ** 
++(define_insn "tablejump"
++  [(set (pc)
++        (match_operand:SI 0 "register_operand" "d"))
++   (use (label_ref (match_operand 1 "" "")))]
++  ""
++  "jpr\\t%0%("
++;
++  [(set_attr "type"     "jump")
++   (set_attr "mode"     "none")
++   (set_attr "length"   "1")])
++
++;;
++;; Comparisons and branches.
++;;
++
++(define_expand "cmpsi"
++  [(set (cc0)
++        (compare:CC (match_operand:SI 0 "register_operand" "d")
++                    (match_operand:SI 1 "nonmemory_operand" "dI")))]
++  ""
++  "
++{
++      dlx_compare_op0 = operands[0];
++      dlx_compare_op1 = operands[1];
++      dlx_compare_mode = SImode;
++      DONE;
++}")
++
++
++(define_expand "tstsi"
++  [(set (cc0)
++        (match_operand:SI 0 "register_operand" "d"))]
++  ""
++  "
++{
++      dlx_compare_op0 = operands[0];
++      dlx_compare_op1 = const0_rtx;
++      dlx_compare_mode = SImode;
++      DONE;
++}")
++
++;
++; ** AO_Comment ** 
++;(define_expand "cmpdf"
++; [(set (cc0)
++;        (compare:CC (match_operand:DF 0 "register_operand" "f")
++;                       (match_operand:DF 1 "register_operand" "f")))]
++;  ""
++;  "
++;{
++;      dlx_compare_op0 = operands[0];
++;      dlx_compare_op1 = operands[1];
++;      dlx_compare_mode = DFmode;
++;      DONE;
++;}")
++
++;
++; ** AO_Comment ** 
++;(define_expand "cmpsf"
++;  [(set (cc0)
++;        (compare:CC (match_operand:SF 0 "register_operand" "f")
++;                       (match_operand:SF 1 "register_operand" "f")))]
++;  ""
++;  "
++;{
++;      dlx_compare_op0 = operands[0];
++;      dlx_compare_op1 = operands[1];
++;      dlx_compare_mode = SFmode;
++;      DONE;
++;}")
++
++
++;;
++;; Branches.
++;; These have to be written out individually because they
++;; are called by name during code generation.
++;;
++
++
++(define_expand "beq"
++  [(set (pc) (if_then_else (eq (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, EQ); DONE; }")
++
++(define_expand "bne"
++  [(set (pc) (if_then_else (ne (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, NE); DONE; }")
++;
++; ** AO_Comment ** 
++(define_expand "blt"
++  [(set (pc) (if_then_else (lt (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, LT); DONE; }")
++;
++(define_expand "bgt"
++  [(set (pc) (if_then_else (gt (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, GT); DONE; }")
++;
++(define_expand "ble"
++  [(set (pc) (if_then_else (le (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, LE); DONE; }")
++;
++(define_expand "bge"
++  [(set (pc) (if_then_else (ge (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, GE); DONE; }")
++;
++(define_expand "bltu"
++  [(set (pc) (if_then_else (ltu (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, LTU); DONE; }")
++;
++(define_expand "bgtu"
++  [(set (pc) (if_then_else (gtu (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, GTU); DONE; }")
++;
++(define_expand "bleu"
++  [(set (pc) (if_then_else (leu (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, LEU); DONE; }")
++;
++(define_expand "bgeu"
++  [(set (pc) (if_then_else (geu (cc0) (const_int 0))
++     (label_ref (match_operand 0 "" "")) (pc)))]
++  "" "{ gen_conditional_branch(operands, GEU); DONE; }")
++
++;
++; Set instructions.
++;
++
++;
++; ** AO_Comment ** 
++;(define_expand "seq"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(eq:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++(define_expand "eeq"
++  [(set (match_operand:SI 0 "register_operand" "=d") 
++	(eq:SI (match_dup 1) (match_dup 2)))]
++  ""
++  " if(dlx_compare_mode != SImode) FAIL;
++    operands[1] = dlx_compare_op0;
++    operands[2] = dlx_compare_op1;
++  ")
++
++
++;
++; ** AO_Comment ** 
++;(define_expand "sne"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(ne:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++(define_expand "eneq"
++  [(set (match_operand:SI 0 "register_operand" "=d") 
++	(ne:SI (match_dup 1) (match_dup 2)))]
++  ""
++  " if(dlx_compare_mode != SImode) FAIL;
++    operands[1] = dlx_compare_op0;
++    operands[2] = dlx_compare_op1;
++  ")
++
++
++;
++; ** AO_Comment ** 
++;(define_expand "slt"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(lt:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++(define_expand "elt"
++  [(set (match_operand:SI 0 "register_operand" "=d") 
++	(lt:SI (match_dup 1) (match_dup 2)))]
++  ""
++  " if(dlx_compare_mode != SImode) FAIL;
++    operands[1] = dlx_compare_op0;
++    operands[2] = dlx_compare_op1;
++  ")
++
++
++;
++; ** AO_Comment ** 
++;(define_expand "sgt"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(gt:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++;
++;
++; ** AO_Comment ** 
++;(define_expand "sle"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(le:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++;
++;(define_expand "sge"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(ge:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++;
++;
++; ** AO_Comment ** 
++;(define_expand "sltu"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(ltu:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++(define_expand "eltu"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++	(ltu:SI (match_dup 1) (match_dup 2)))]
++  ""
++  " if(dlx_compare_mode != SImode) FAIL;
++    operands[1] = dlx_compare_op0;
++    operands[2] = dlx_compare_op1;
++  ")
++;
++;
++; ** AO_Comment ** 
++;(define_expand "sgtu"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(gtu:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++;
++;
++; ** AO_Comment ** 
++;(define_expand "sleu"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(leu:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++;
++; ** AO_Comment ** 
++;(define_expand "sgeu"
++;  [(set (match_operand:SI 0 "register_operand" "=d") 
++;	(geu:SI (match_dup 1) (match_dup 2)))]
++;  ""
++;  " if(dlx_compare_mode != SImode) FAIL;
++;    operands[1] = dlx_compare_op0;
++;    operands[2] = dlx_compare_op1;
++;  ")
++
++;;
++;; Integer conditional branches; the RTL for these is 
++;; generated in gen_conditional_branch().
++;;
++
++;
++; ** AO_Comment ** 
++(define_insn "int_cond_branch"
++  [(set (pc) (if_then_else (eq:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++
++;
++; ** AO_Comment ** 
++(define_insn "int_cond_branch_rev"
++  [(set (pc) (if_then_else (ne:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++
++;
++; ************** AO_Add **********:
++; 070601-1 unsigned branch active C.katano
++; 070601-2 all in-active C.katano
++(define_insn "int_cond_branch_lt"
++  [(set (pc) (if_then_else (lt:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_gt"
++  [(set (pc) (if_then_else (gt:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_le"
++  [(set (pc) (if_then_else (le:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_ge"
++  [(set (pc) (if_then_else (ge:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_ltu"
++  [(set (pc) (if_then_else (ltu:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_gtu"
++  [(set (pc) (if_then_else (gtu:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_leu"
++  [(set (pc) (if_then_else (leu:SI (const_int 0)
++                           (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++(define_insn "int_cond_branch_geu"
++  [(set (pc) (if_then_else (geu:SI (const_int 0)
++                            (match_operand:SI 0 "register_operand" "d"))
++                           (label_ref (match_operand 1 "" "")) (pc)))]
++  ""
++  "brnz\\t%0,%1%("
++  [(set_attr "type" "branch")
++   (set_attr "mode" "SI")])
++
++
++;;
++;; Floating point conditional branches,
++;; also generated in gen_conditional_branch().
++;;
++
++
++;(define_insn "fp_cond_branch"
++;  [(set (pc) (if_then_else (ne:SF
++;                            (match_operand:SF 0 "register_operand" "f")
++;                            (const_int 0))
++;              (label_ref (match_operand 1 "" "")) (pc)))]
++;  ""
++;  "brz\\t%0,%1%("
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SF")])
++;
++;(define_insn "fp_cond_branch_rev"
++;  [(set (pc) (if_then_else (eq:SF
++;                            (match_operand:SF 0 "register_operand" "f")
++;                            (const_int 0))
++;              (label_ref (match_operand 1 "" "")) (pc)))]
++;  ""
++;  "brnz\\t%0,%1%("
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SF")])
++
++
++;;
++;; RTL for s__ instructions.
++;; The RTL for these is generated in gen_conditional_branch().
++;;
++;; The match_operator RTL expression is very useful
++;; here in that you can write 3 patterns for about 
++;; 32 instructions.
++;;
++;
++
++;
++; ** AO_Comment ** 
++(define_insn "set_internal"
++  [(set (match_operand:SI 0 "register_operand" "=d")
++        (match_operator:SI 1 "comparison_operator"
++         [(match_operand:SI 2 "register_operand" "d")
++          (match_operand:SI 3 "register_operand" "d")]))]
++  ""
++  "%C1\\t%0,%2,%3"
++  [(set_attr "type" "alu")
++   (set_attr "mode" "SI")])
++
++
++;;
++;; Float compares.
++;; The RTL for these is also generated in
++;; gen_conditional_branch().
++;;
++;
++;(define_insn ""
++;  [(set (match_operand:SF 0 "register_operand" "=z")
++;        (match_operator:SF 1 "signed_comparison_operator"
++;         [(match_operand:SF 2 "register_operand" "f")
++;          (match_operand:SF 3 "register_operand" "f")]))]
++;  ""
++;  "e%C1\\t%2,%3"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "SF")])
++;
++;(define_insn ""
++;  [(set (match_operand:DF 0 "register_operand" "=z")
++;        (match_operator:DF 1 "signed_comparison_operator"
++;         [(match_operand:DF 2 "register_operand" "f")
++;          (match_operand:DF 3 "register_operand" "f")]))]
++;  ""
++;  "%C1\\t%2,%3"
++;  [(set_attr "type" "fp")
++;   (set_attr "mode" "DF")])
++;
++;
++
++
++;; normilize to use conditional lt or ltu at optimization.
++;; see gen_conditional_branch() in brownie32.c also.
++; le -> lt, swap and reverse
++; ge -> lt, reverse
++; gt -> lt, swap
++; leu, -> ltu, swap and reverse
++; geu -> ltu, reverse
++; gtu -> ltu, swap
++
++; le -> lt, swap and reverse
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (le:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))
++	(set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_operand 3 "" ""))
++			(pc)))]
++	""
++	[(set (match_dup 0)
++		(lt:SI (match_dup 2) (match_dup 1)))
++	 (set (pc) (if_then_else (eq:SI (const_int 0) (match_dup 0))
++			(label_ref (match_dup 3))
++			(pc)))])
++
++; ge -> lt, reverse
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (ge:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))
++	(set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_operand 3 "" ""))
++			(pc)))]
++	""
++	[(set (match_dup 0)
++		(lt:SI (match_dup 1) (match_dup 2)))
++	 (set (pc) (if_then_else (eq:SI (const_int 0) (match_dup 0))
++			(label_ref (match_dup 3))
++			(pc)))])
++
++; gt -> lt, swap
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (gt:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))
++	(set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_operand 3 "" ""))
++			(pc)))]
++	""
++	[(set (match_dup 0)
++		(lt:SI (match_dup 2) (match_dup 1)))
++	 (set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_dup 3))
++			(pc)))])
++;; unsfined staff.
++; leu -> ltu, swap and reverse
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (leu:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))
++	(set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_operand 3 "" ""))
++			(pc)))]
++	""
++	[(set (match_dup 0)
++		(ltu:SI (match_dup 2) (match_dup 1)))
++	 (set (pc) (if_then_else (eq:SI (const_int 0) (match_dup 0))
++			(label_ref (match_dup 3))
++			(pc)))])
++
++; geu -> ltu, reverse
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (geu:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))
++	(set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_operand 3 "" ""))
++			(pc)))]
++	""
++	[(set (match_dup 0)
++		(ltu:SI (match_dup 1) (match_dup 2)))
++	 (set (pc) (if_then_else (eq:SI (const_int 0) (match_dup 0))
++			(label_ref (match_dup 3))
++			(pc)))])
++
++; gtu -> ltu, swap
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (gtu:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))
++	(set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_operand 3 "" ""))
++			(pc)))]
++	""
++	[(set (match_dup 0)
++		(ltu:SI (match_dup 2) (match_dup 1)))
++	 (set (pc) (if_then_else (ne:SI (const_int 0) (match_dup 0))
++			(label_ref (match_dup 3))
++			(pc)))])
++
++
++
++;
++; set_internal only
++;
++;; le -> lt, swap and reverse
++;; ge -> lt, reverse
++;; gt -> lt, swap
++;; leu, -> ltu, swap and reverse
++;; geu -> ltu, reverse
++;; gtu -> ltu, swap
++
++
++
++;; le -> lt, swap and reverse -> lt $0,$2,$1; xori $0,$0,#1
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (le:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))]
++	""
++	[(set (match_dup 0)
++		(lt:SI (match_dup 2) (match_dup 1)))
++	(set (match_dup 0) (xor:SI (match_dup 0) (const_int 1)))])
++
++;; ge -> lt, reverse -> lt, xori $0, $0, #1
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (ge:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))]
++	""
++	[(set (match_dup 0)
++		(lt:SI (match_dup 2) (match_dup 1)))
++	(set (match_dup 0) (xor:SI (match_dup 0) (const_int 1)))])
++	
++;; gt -> lt, swap -> lt $0,$2,$1
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (gt:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))]
++	""
++	[(set (match_dup 0)
++		(lt:SI (match_dup 2) (match_dup 1)))])
++
++;; unsfined staff.
++
++;; leu -> ltu, swap and reverse -> ltu $0,$2,$1; xor $0,$0,#1
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (leu:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))]
++	""
++	[(set (match_dup 0)
++		(ltu:SI (match_dup 2) (match_dup 1)))
++	(set (match_dup 0) (xor:SI (match_dup 0) (const_int 1)))])
++
++;; geu -> ltu, reverse -> ltu, xori dst, dst, #1
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	   (geu:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))]
++	""
++	[(set (match_dup 0)
++		(ltu:SI (match_dup 1) (match_dup 2)))
++	(set (match_dup 0) (xor:SI (match_dup 0) (const_int 1)))])
++
++;; gtu -> ltu, swap, -> ltu $0,$2,$1
++(define_peephole2
++	[(set (match_operand 0 "register_operand" "")
++	 (gtu:SI (match_operand 1 "register_operand" "")
++		(match_operand 2 "register_operand" "")))]
++	""
++	[(set (match_dup 0)
++		(ltu:SI (match_dup 2) (match_dup 1)))])
++
++
++
++
++;;
++;; unsplit for nandsi3
++;;
++(define_peephole2
++  [(set (match_operand:SI 3 "register_operand" "=d")
++	(and:SI (match_operand:SI 1 "register_operand" "%d")
++	                (match_operand:SI 2 "register_operand" "d")))
++  (set (match_operand:SI 0 "register_operand" "=d") (not:SI  (match_dup 3)))]
++  "find_reg_note (NEXT_INSN (insn), REG_DEAD, operands[3]) ||
++     (REGNO (operands[0]) == REGNO (operands[3]))"
++  [(set (match_dup 0)
++        (not:SI (and:SI (match_dup 1)
++	                (match_dup 2))))])
++
++;; for norsi3
++(define_peephole2
++  [(set (match_operand:SI 3 "register_operand" "=d")
++	(ior:SI (match_operand:SI 1 "register_operand" "%d")
++	                (match_operand:SI 2 "register_operand" "d")))
++  (set (match_operand:SI 0 "register_operand" "=d") (not:SI  (match_dup 3)))]
++  "find_reg_note (NEXT_INSN (insn), REG_DEAD, operands[3]) ||
++     (REGNO (operands[0]) == REGNO (operands[3]))"
++  [(set (match_dup 0)
++        (not:SI (ior:SI (match_dup 1)
++	                (match_dup 2))))])
++
++
++
++;;
++;;
++
++;(insn 89 88 91 10 (set (reg/v/f:SI 54 [ type ])
++;        (plus:SI (reg:SI 119)
++;          (const:SI (plus:SI (symbol_ref:SI ("cplus_demangle_builtin_types") \
++;[flags 0x2] <var_decl 0xb7bfd370 cplus_demangle_builtin_types>)
++;                    (const_int -1940 [0xfffff86c]))))) 0 {addsi3} (nil)
++;    (nil))
++
++;(define_peephole2
++;  [(set (match_operand:SI 0 "register_operand" "=d")
++;       (const:SI (plus:SI
++;                   (match_operand:SI 1 "symbol_ref_operand" "")
++;                   (match_operand:SI 2 "immediate_operand" ""))))]
++;  "GET_CODE (operands[2]) == CONST_INT"
++;  [(set (match_dup 0)
++;        (match_dup 1))
++;   (set (match_dup 0)
++;       (plus:SI (match_dup 0)(match_dup 2)))])
+Index: gcc/config/brownie32/brownie32.opt
+===================================================================
+RCS file: gcc/config/brownie32/brownie32.opt
+diff -N gcc/config/brownie32/brownie32.opt
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/brownie32.opt	28 Nov 2007 10:30:07 -0000	1.2
+@@ -0,0 +1,30 @@
++; Options for the brownie32 port of the compiler.
++
++; Copyright (C) 2008 Free Software Foundation, Inc.
++;
++; This file is part of GCC.
++;
++; GCC is free software; you can redistribute it and/or modify it under
++; the terms of the GNU General Public License as published by the Free
++; Software Foundation; either version 2, or (at your option) any later
++; version.
++;
++; GCC is distributed in the hope that it will be useful, but WITHOUT ANY
++; WARRANTY; without even the implied warranty of MERCHANTABILITY or
++; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++; for more details.
++;
++; You should have received a copy of the GNU General Public License
++; along with GCC; see the file COPYING.  If not, write to the Free
++; Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
++; 02110-1301, USA.
++
++
++
++mquickcall
++Target Report Mask(QUICKCALL)
++register passing for func. arg.
++
++mno-quickcall
++Target Report InverseMask(QUICKCALL)
++stack passing for func. arg.
+Index: gcc/config/brownie32/crt1.s
+===================================================================
+RCS file: gcc/config/brownie32/crt1.s
+diff -N gcc/config/brownie32/crt1.s
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/crt1.s	5 Feb 2008 11:31:58 -0000	1.3
+@@ -0,0 +1,21 @@
++	/* see brownie32.h:	 register usage for consisitency.  */
++
++#define SP r5
++
++        .text
++        .global _start
++_start:
++;	addi r5,r0,#0x2000	; Initialize frame pointer register(r5)
++;	lsoi r5,r5,#0x4000	; r5 = (r5<<16 | #0x00004000)
++	addi SP,r0,#0x2000	; Initialize stack pointer register(SP)
++	lsoi SP,SP,#0x2000	; SP = (SP<<16 | #0x00000000)
++
++	addi  SP,SP,#-4
++        sw    (SP),r3
++        jpl    _main
++        lw    r3,(SP)
++        nop
++        addi  SP,SP,#4
++
++	trap 0
++
+Index: gcc/config/brownie32/crti.asm
+===================================================================
+RCS file: gcc/config/brownie32/crti.asm
+diff -N gcc/config/brownie32/crti.asm
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/crti.asm	26 Nov 2007 10:10:52 -0000	1.1
+@@ -0,0 +1,10 @@
++	.section .init,"ax",@progbits
++	.globl	_init
++	.type	_init,@function
++_init:
++
++	.section .fini,"ax",@progbits
++	.globl	_fini
++	.type	_fini,@function
++_fini:
++
+Index: gcc/config/brownie32/crtn.asm
+===================================================================
+RCS file: gcc/config/brownie32/crtn.asm
+diff -N gcc/config/brownie32/crtn.asm
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/crtn.asm	26 Nov 2007 10:10:52 -0000	1.1
+@@ -0,0 +1,6 @@
++	.section .init,"ax",@progbits
++	trap	0
++
++	.section .fini,"ax",@progbits
++	trap	0
++
+Index: gcc/config/brownie32/elf.h
+===================================================================
+RCS file: gcc/config/brownie32/elf.h
+diff -N gcc/config/brownie32/elf.h
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/elf.h	12 Feb 2008 08:26:12 -0000	1.2
+@@ -0,0 +1,54 @@
++/* Target macros for brownie32*-elf targets.
++   Copyright (C) 1994, 1997, 1999, 2000, 2002, 2003, 2004
++   Free Software Foundation, Inc.
++   Copyright (C) 2005, 2006 Upwind Technology, Inc.
++
++This file is part of GCC.
++
++GCC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GCC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GCC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* MIPS assemblers don't have the usual .set foo,bar construct;
++   .set is used for assembler options instead.  */
++#undef SET_ASM_OP
++#define ASM_OUTPUT_DEF(FILE, LABEL1, LABEL2)			\
++  do								\
++    {								\
++      fputc ('\t', FILE);					\
++      assemble_name (FILE, LABEL1);				\
++      fputs (" = ", FILE);					\
++      assemble_name (FILE, LABEL2);				\
++      fputc ('\n', FILE);					\
++    }								\
++  while (0)
++
++#undef ASM_DECLARE_OBJECT_NAME
++#define ASM_DECLARE_OBJECT_NAME mips_declare_object_name
++
++#undef ASM_FINISH_DECLARE_OBJECT
++#define ASM_FINISH_DECLARE_OBJECT mips_finish_declare_object
++
++/* Leave the linker script to choose the appropriate libraries.  */
++//#undef  LIB_SPEC
++//#define LIB_SPEC ""
++
++#undef  STARTFILE_SPEC
++/* #define STARTFILE_SPEC "crti%O%s crtbegin%O%s" */
++#define STARTFILE_SPEC "crt1.o%s"
++
++#undef  ENDFILE_SPEC
++/* #define ENDFILE_SPEC "crtend%O%s crtn%O%s" */
++#define ENDFILE_SPEC ""
++
+Index: gcc/config/brownie32/lib1funcs.asm
+===================================================================
+RCS file: gcc/config/brownie32/lib1funcs.asm
+diff -N gcc/config/brownie32/lib1funcs.asm
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/lib1funcs.asm	26 Nov 2007 10:10:52 -0000	1.1
+@@ -0,0 +1,142 @@
++;; libgcc routines for the Renesas H8/300 CPU.
++;; Contributed by Steve Chamberlain <sac@cygnus.com>
++;; Optimizations by Toshiyasu Morita <toshiyasu.morita@renesas.com>
++
++/* Copyright (C) 1994, 2000, 2001, 2002, 2003, 2004
++   Free Software Foundation, Inc.
++
++This file is free software; you can redistribute it and/or modify it
++under the terms of the GNU General Public License as published by the
++Free Software Foundation; either version 2, or (at your option) any
++later version.
++
++In addition to the permissions in the GNU General Public License, the
++Free Software Foundation gives you unlimited permission to link the
++compiled version of this file into combinations with other programs,
++and to distribute those combinations without any restriction coming
++from the use of this file.  (The General Public License restrictions
++do apply in other respects; for example, they cover modification of
++the file, and distribution when not linked into a combine
++executable.)
++
++This file is distributed in the hope that it will be useful, but
++WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* Assembler register definitions.  */
++
++#ifdef L_b32cmpsi2
++	.section .text
++	.align 2
++	.global ___b32_cmpsi2
++___b32_cmpsi2:
++	sub	r10,r0,r01
++	.end
++#endif /* L_b32cmpsi2 */
++
++#ifdef L_b32ucmpsi2
++	.section .text
++	.align 2
++	.global ___b32_ucmpsi2
++___b32_ucmpsi2:
++	sub	r10,r0,r01
++	.end
++
++#endif /* L_b32ucmpsi2 */
++
++#ifdef L_b32addsf3
++	.section .text
++	.align 2
++	.global ___b32_addsf3
++___b32_addsf3:
++;	addi	r6,r6,#-4
++;	sw	(r6),r3
++
++	lw	r28, 4(r6)
++	nop
++	lw	r29, 8(r6)
++	nop
++AddFloat:
++	lrsi	r10,r28,#23
++	andi	r10,r10,0xff		; Expornent --> r10, r11
++	lrsi	r11,r29,#23
++	andi	r11,r11,0xff
++;
++	addi	r7,r0,%hi0x807fffff
++	llsi	r7,r7,#16
++	ori	r7,r7,%lo0x807fffff	; 0x807ffff --> r7
++;
++	and	r12,r28,r1		; Mantissa --> r12, r13
++	and	r13,r29,r1
++;
++L_AddFloat00:
++	sub	r7,r10,r11		; Compare expornent
++	brz	r7,AddFloat20
++	andi	r1,r1,0x80		; Check carry flag
++	brnz	r1,AddFloat10
++;
++; r10 > r11
++	arsi	r13,r13,#1	; Right shift mantissa
++	addi	r11,r11,#1	; Expornent+1
++	jp	L_AddFloat00
++;
++; r10 < r11
++AddFloat10:
++	arsi	r12,r12,#1
++	addi	r10,r10,#1
++	jp	L_AddFloat00
++;
++; Add mantissa
++AddFloat20:
++	add	r12,r12,r13
++;
++; Regularization, Expornent r10, Mantissa r12
++AddFloat30:
++	llsi	r10,r10,#23
++	or	r28,r10,r12	; Result r28
++
++;	lw	r3,(r5)
++;	addi	r5,r5,#4
++	jpr	r3
++	.end
++#endif /* L_b32addsf3 */
++
++#ifdef L_b32subsf3
++	.section .text
++	.align 2
++	.global ___b32_subsf3
++___b32_subsf3:
++	nop
++	nop
++	nop
++	.end
++#endif /* L_b32subsf3 */
++
++#ifdef L_b32mulsf3
++	.section .text
++	.align 2
++	.global ___b32_mulsf3
++___b32_mulsf3:
++	nop
++	nop
++	nop
++	.end
++#endif /* L_b32mulsf3 */
++
++#ifdef L_b32divsf3
++	.section .text
++	.align 2
++	.global ___b32_divsf3
++___b32_divsf3:
++	nop
++	nop
++	nop
++	.end
++#endif /* L_b32divsf3 */
++
+Index: gcc/config/brownie32/predicates.md
+===================================================================
+RCS file: gcc/config/brownie32/predicates.md
+diff -N gcc/config/brownie32/predicates.md
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/predicates.md	24 Feb 2008 14:27:15 -0000	1.2
+@@ -0,0 +1,21 @@
++(define_predicate "sym_ref_mem_operand"
++  (match_code "mem")
++{
++  rtx t1 = XEXP(op, 0);
++  if(GET_CODE(t1) == SYMBOL_REF)
++    {
++      return 1;
++    }
++  else
++    return 0;
++})
++
++(define_predicate "signed_comparison_operator"
++ (and
++  (match_code "eq,ne,lt,le,ge,gt")
++  (match_test "mode == VOIDmode || GET_MODE (op) == mode")))
++
++;;
++;;
++;(define_predicate "symbol_ref_operand"
++;  (match_code "symbol_ref"))
+Index: gcc/config/brownie32/t-brownie32
+===================================================================
+RCS file: gcc/config/brownie32/t-brownie32
+diff -N gcc/config/brownie32/t-brownie32
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/t-brownie32	24 Feb 2008 14:27:42 -0000	1.2
+@@ -0,0 +1,27 @@
++# -*- makefile -*-
++
++## SImode routines
++#
++#LIB2FUNCS_EXTRA = \
++#	$(srcdir)/config/brownie32/b32-lib2.c
++#
++
++# fp-bit and dp-bit are really part of libgcc1, but this will cause
++# them to be built correctly, so... [taken from t-sparclite]
++# We want fine grained libraries, so use the new code to build the
++# floating point emulation libraries.
++FPBIT = fp-bit.c
++DPBIT = dp-bit.c
++
++dp-bit.c: $(srcdir)/config/fp-bit.c
++	cat $(srcdir)/config/fp-bit.c >> dp-bit.c
++
++fp-bit.c: $(srcdir)/config/fp-bit.c
++	echo '#define FLOAT' > fp-bit.c
++	cat $(srcdir)/config/fp-bit.c >> fp-bit.c
++
++MULTILIB_OPTIONS = mquickcall
++MULTILIB_DIRNAMES = b32-quickcall
++
++LIBCC = stmp-multilib
++INSTALL_LIBGCC = install-multilib
+Index: gcc/config/brownie32/t-elf
+===================================================================
+RCS file: gcc/config/brownie32/t-elf
+diff -N gcc/config/brownie32/t-elf
+--- /dev/null	1 Jan 1970 00:00:00 -0000
++++ gcc/config/brownie32/t-elf	19 Dec 2007 08:46:59 -0000	1.2
+@@ -0,0 +1,41 @@
++# Don't let CTOR_LIST end up in sdata section.
++#CRTSTUFF_T_CFLAGS = -G 0
++
++# Assemble startup files.
++#$(T)crti.o: $(srcdir)/config/Brownie32/crti.asm $(GCC_PASSES)
++#	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
++#	-c -o $(T)crti.o -x assembler-with-cpp $(srcdir)/config/Brownie32/crti.asm
++
++#$(T)crtn.o: $(srcdir)/config/Brownie32/crtn.asm $(GCC_PASSES)
++#	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
++#	-c -o $(T)crtn.o -x assembler-with-cpp $(srcdir)/config/Brownie32/crtn.asm
++#
++$(T)crt1.o: $(srcdir)/config/brownie32/crt1.s $(GCC_PASSES)
++	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
++	-c -o $(T)crt1.o -x assembler-with-cpp $(srcdir)/config/brownie32/crt1.s
++
++##LIB1ASMSRC = brownie32/lib1funcs.asm
++##LIB1ASMFUNCS = 	_b32cmpsi2  _b32ucmpsi2 _b32addsf3 _b32subsf3 _b32mulsf3 _b32divsf3
++#LIB1ASMFUNCS = 	_b32cmpsi2  _b32ucmpsi2
++
++
++# We must build libgcc2.a with -G 0, in case the user wants to link
++# without the $gp register.
++#TARGET_LIBGCC2_CFLAGS = -G 0
++#TARGET_LIBGCC2_CFLAGS = -DDF=SF -DDI=SI
++#TARGET_LIBGCC2_CFLAGS = -DDF=SF
++#TARGET_LIBGCC2_CFLAGS = 
++
++# Build the libraries for both hard and soft floating point
++
++#MULTILIB_OPTIONS = msoft-float EL/EB
++#MULTILIB_DIRNAMES = soft-float el eb
++#MULTILIB_MATCHES = EL=mel EB=meb
++#MULTILIB_MATCHES = msingle-float=m4650
++#EXTRA_MULTILIB_PARTS = crtbegin.o crtend.o crti.o crtn.o
++#EXTRA_MULTILIB_PARTS = crt1.o
++EXTRA_MULTILIB_PARTS =
++
++LIBGCC = stmp-multilib
++INSTALL_LIBGCC = install-multilib
++

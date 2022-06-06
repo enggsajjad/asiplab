@@ -1,0 +1,265 @@
+#!/bin/sh
+
+# Copyright (C) 2008-2009 ASIP Solutions, Inc. All rights reserved
+
+if [ "${0#/}" != "$0" ]; then
+        # starts with "/"
+        ASIP_MEISTER_HOME="$0"
+elif [ "${0#./}" != "$0" ]; then
+        # starts with "./"
+        ASIP_MEISTER_HOME=`pwd`"${0#.}"
+elif [ "${0#../}" != "$0" ]; then
+        # starts with "../"
+        ASIP_MEISTER_HOME=`dirname "$(pwd)"`"${0#..}"
+else
+        # $0 is a command name
+        ASIP_MEISTER_HOME=`which $0`
+fi
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+
+
+if [ -z "$ASIP_APDEV_SRCROOT" ]; then
+	ASIP_APDEV_SRCROOT=${ASIP_MEISTER_HOME}/CCG
+fi
+
+BINUTILS_SRC_PATH=${ASIP_APDEV_SRCROOT}/binutils-2.16.1
+GCC_SRC_PATH=${ASIP_APDEV_SRCROOT}/gcc-4.2.2
+GDB_SRC_PATH=${ASIP_APDEV_SRCROOT}/gdb-6.4
+NEWLIB_SRC_PATH=${ASIP_APDEV_SRCROOT}/newlib-1.14.0
+
+BSTD32_TEMPLATE=${ASIP_MEISTER_HOME}/CCG/template
+
+ARCHC_ROOT=${ASIP_MEISTER_HOME}/CCG/archc
+CCG_ROOT=${ASIP_MEISTER_HOME}/CCG
+
+MEISTER_DIR=`pwd`/meister
+LOGFILE_PATH=${MEISTER_DIR}/$3
+
+cd meister
+
+echo "Starting compiler description generation." 1> ${LOGFILE_PATH}
+if [ "$1" = "descgen" ]
+then
+    if [ -d $2.swgen ]
+    then
+	rm -rf $2.swgen
+	if [ $? -ne 0 ]
+	then
+	    echo "Failed to remove the old directory." >> ${LOGFILE_PATH}
+	    exit 1
+	fi
+    fi
+    mkdir $2.swgen
+fi
+
+cd $2.swgen
+if [ "${ASIP_GNU_INSTALL_DIR+defined}" = "defined" ]
+then
+  if [ ! -d ${ASIP_GNU_INSTALL_DIR} ]
+  then
+    echo "Error: destination directory for GNU Tools is not exist." >> ${LOGFILE_PATH}
+    exit 1
+  fi
+else
+  ASIP_GNU_INSTALL_DIR=`pwd`
+fi
+
+if [ "$1" = "descgen" ]
+then
+    echo "" 1>> ${LOGFILE_PATH}
+    ccginput_translator -i ../$2.tr 1>> ${LOGFILE_PATH}
+    mv ../$2.xml ./$2.xml
+    ccginput_mod ./$2.xml
+#    sed /nickname/d < ./$2.xml.tmp | sed /\<name\>/a\<nickname\>brownie32\<\/nickname\> > ./$2.xml
+#    rm ./$2.xml.tmp
+    cp ${BSTD32_TEMPLATE}/processor.xsd ./
+fi
+MODEL_NAME=`grep nickname ./$2.xml | sed s#^\<nickname\>## | sed s#\</nickname\>##`
+echo ${MODEL_NAME}
+
+if [ $? = 0 ]
+then
+    case $1 in
+	install)
+	echo "Generating GNU Tools..." >> ${LOGFILE_PATH}
+
+	if [ -d ../$2.swtmp ]
+	then
+	    rm -rf ../$2.swtmp
+	    if [ $? -ne 0 ]
+	    then
+		echo "Failed to remove the old temporary directory." >> ${LOGFILE_PATH}
+		exit 1
+	    fi
+	fi
+	mkdir ../$2.swtmp
+	cd ../$2.swtmp
+	
+	# Binutils part
+	cp ${BSTD32_TEMPLATE}/processor.xsd ./
+#	cp ${BSTD32_TEMPLATE}/brownie32_ac.in ./
+	${CCG_ROOT}/bin/ccg -B ../$2.swgen/$2.xml > ./$2.asm.m4
+	if [ $? -ne 0 ]
+	then
+	    echo "Error: fault in binutils description generation." >> ${LOGFILE_PATH}
+	    exit 1
+	fi
+
+	m4 -P $2.asm.m4 ${BSTD32_TEMPLATE}/xxxcpu.c.in > libccg-brownie32.c
+	m4 -P $2.asm.m4 ${BSTD32_TEMPLATE}/xxxcpu.h.in > libccg-brownie32.h
+
+	export BINUTILS_PATH=${BINUTILS_SRC_PATH}
+	if [ ! -d ${BINUTILS_PATH} ]
+	then
+	    echo "Error: destination directory for binutils is not exist." >> ${LOGFILE_PATH}
+	    exit 1
+	fi
+
+	cp libccg-brownie32.c ${BINUTILS_SRC_PATH}/opcodes/
+	cp libccg-brownie32.h ${BINUTILS_SRC_PATH}/include/opcode/
+	cp ${BSTD32_TEMPLATE}/simple-expr.* ${BINUTILS_SRC_PATH}/opcodes/
+
+        cd ${BINUTILS_SRC_PATH}
+        if [ -d build-binutils ]
+        then
+            rm -rf build-binutils
+            if [ $? -ne 0 ]
+            then
+                echo "Failed to remove the old work directory for binutils." >> ${LOGFILE_PATH}
+                exit 1
+            fi
+        fi
+        mkdir build-binutils
+
+        cd build-binutils
+        ../configure --target=brownie32-elf \
+                                --disable-nls --prefix=${ASIP_GNU_INSTALL_DIR} \
+                                1>> ${LOGFILE_PATH} 2>&1
+        make 1>> ${LOGFILE_PATH} 2>&1
+        make install 1>> ${LOGFILE_PATH} 2>&1
+
+	if [ $? -ne 0 ]
+	then
+	    echo "Error: fault in binutils generation." >> ${LOGFILE_PATH}
+	    exit 1
+	else
+	    echo "Binutils was generated successfully." >> ${LOGFILE_PATH}
+	fi
+
+        export PATH=${ASIP_GNU_INSTALL_DIR}/bin:$PATH
+
+	# GDB part
+	cd ${MEISTER_DIR}/$2.swtmp
+	m4 -P $2.asm.m4 ${BSTD32_TEMPLATE}/xxxcpu-sim.c.in > libccg-sim-brownie32.c
+	m4 -P $2.asm.m4 ${BSTD32_TEMPLATE}/xxxcpu-sim.h.in > libccg-sim-brownie32.h
+
+        export GDB_PATH=${GDB_SRC_PATH}
+        if [ ! -d ${GDB_PATH} ]
+        then
+            echo "Error: destination directory for gdb is not exist." >> ${LOGFILE_PATH}
+            exit 1
+        fi
+
+	cp libccg-brownie32.c ${GDB_SRC_PATH}/opcodes/
+	cp libccg-brownie32.h ${GDB_SRC_PATH}/include/opcode/
+	cp ${BSTD32_TEMPLATE}/simple-expr.* ${GDB_SRC_PATH}/opcodes/
+	cp libccg-sim-brownie32.c libccg-sim-brownie32.h ${GDB_SRC_PATH}/sim/brownie32/
+
+        cd ${GDB_SRC_PATH}
+        if [ -d build-gdb ]
+        then
+            rm -rf build-gdb
+            if [ $? -ne 0 ]
+            then
+                echo "Failed to remove the old work directory for gdb." >> ${LOGFILE_PATH}
+                exit 1
+            fi
+        fi
+        mkdir build-gdb
+
+        cd build-gdb
+        ../configure --target=brownie32-elf \
+                                --disable-nls --prefix=${ASIP_GNU_INSTALL_DIR} \
+                                --disable-sim 1>> ${LOGFILE_PATH} 2>&1
+        make 1>> ${LOGFILE_PATH} 2>&1
+        make install 1>> ${LOGFILE_PATH} 2>&1
+
+        if [ $? -ne 0 ]
+        then
+            echo "Error: fault in gdb generation." >> ${LOGFILE_PATH}
+            exit 1
+        else
+            echo "Gdb was generated successfully." >> ${LOGFILE_PATH}
+        fi
+
+	# CCG part
+	cd ${MEISTER_DIR}/$2.swtmp
+	${CCG_ROOT}/bin/ccg ../$2.swgen/$2.xml > $2.m4
+	cp ${BSTD32_TEMPLATE}/brownie32.c.in ${BSTD32_TEMPLATE}/brownie32.h.in \
+		${BSTD32_TEMPLATE}/brownie32.md.in ./
+	m4 -P $2.m4 brownie32.c.in > brownie32.c
+	m4 -P $2.m4 brownie32.h.in > brownie32.h
+	m4 -P $2.m4 brownie32.md.in > brownie32.md.tmp
+	sed "s#(%1)&0xff\\\\#%1\\\\#" < brownie32.md.tmp > brownie32.md
+
+	if [ ! -d ${GCC_SRC_PATH}/gcc/config/brownie32 ]
+	then
+		mkdir ${GCC_SRC_PATH}/gcc/config/brownie32
+	fi
+	cp brownie32.c brownie32.h brownie32.md ${GCC_SRC_PATH}/gcc/config/brownie32/
+
+	cd ${GCC_SRC_PATH}
+	if [ -d build-gcc ]
+	then
+	    rm -rf build-gcc
+	    if [ $? -ne 0 ]
+	    then
+		echo "Failed to remove the old work directory for gcc." >> ${LOGFILE_PATH}
+		exit 1
+	    fi
+	fi
+	mkdir build-gcc
+
+	cd build-gcc
+	../configure --target=brownie32-elf --enable-languages=c \
+				--disable-nls --prefix=${ASIP_GNU_INSTALL_DIR} \
+				--with-newlib --with-headers=${NEWLIB_SRC_PATH}/newlib/libc/include 1>> ${LOGFILE_PATH} 2>&1
+	make 1>> ${LOGFILE_PATH} 2>&1
+	make install 1>> ${LOGFILE_PATH} 2>&1
+	if [ $? -ne 0 ]
+	then
+	  echo "Error: fault in compiler description generation." >> ${LOGFILE_PATH}
+	  exit 1
+	else
+	  echo "Gcc was generated successfully." >> ${LOGFILE_PATH}
+	fi
+
+	#newlib build
+	if [ ! -e ${ASIP_GNU_INSTALL_DIR}/brownie32-elf/lib/libc.a \
+		-o ! -e ${ASIP_GNU_INSTALL_DIR}/brownie32-elf/lib/libg.a \
+		-o ! -e ${ASIP_GNU_INSTALL_DIR}/brownie32-elf/lib/libm.a ]
+	then
+		cd ${NEWLIB_SRC_PATH}
+		if [ ! -d build-newlib ]
+		then
+		    mkdir build-newlib
+		fi
+		cd build-newlib
+		../configure --target=brownie32-elf --disable-nls\
+				--prefix=${ASIP_GNU_INSTALL_DIR} 1>> ${LOGFILE_PATH} 2>&1
+	        make 1>> ${LOGFILE_PATH} 2>&1
+        	make install 1>> ${LOGFILE_PATH} 2>&1
+		if [ $? -ne 0 ]
+		then
+		    echo "Error: fault in newlib generation." >> ${LOGFILE_PATH}
+		    exit 1
+		else
+		    echo "Newlib was generated successfully." >> ${LOGFILE_PATH}
+		fi
+	fi
+    esac
+fi
+
+
+echo "Successfully Generated." 1>> ${LOGFILE_PATH}

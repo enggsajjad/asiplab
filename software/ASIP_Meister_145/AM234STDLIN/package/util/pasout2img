@@ -1,0 +1,16 @@
+#!/bin/sh
+# convert .out from pas, to img
+# written by Hirofumi IWATO
+# All Rights Reserved 2008. ASIP Solutions, Inc.
+
+if [ $# -lt  1 ]; then
+  echo "ERROR: Too few regular arguments."
+  echo "       pasout2img [hoge.out]"
+  exit
+fi
+
+AWKSCRIPTDIR=$(dirname $(which pasout2img))
+
+cat $1 | awk --posix -f ${AWKSCRIPTDIR}/pasout2im.awk > TestData.IM
+cat $1 | awk --posix -f ${AWKSCRIPTDIR}/pasout2dm.awk > TestData.DM
+

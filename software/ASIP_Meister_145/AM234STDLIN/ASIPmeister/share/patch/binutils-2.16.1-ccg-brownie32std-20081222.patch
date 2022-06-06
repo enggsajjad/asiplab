@@ -1,0 +1,239 @@
+diff -crN binutils-2.16.1/gas/config/tc-brownie32.c binutils-2.16.1/gas/config/tc-brownie32.c
+*** binutils-2.16.1/gas/config/tc-brownie32.c	2008-11-11 14:02:34.000000000 +0900
+--- binutils-2.16.1/gas/config/tc-brownie32.c	2008-11-11 15:05:19.000000000 +0900
+***************
+*** 336,341 ****
+--- 336,343 ----
+      as_fatal (_("Broken assembler.  No assembly attempted."));
+  
+    define_some_regs ();
++   /* Initialize instruction extention library */
++   libccg_init();
+  }
+  
+  /* Assemble a single instruction.  Its label has already been handled
+***************
+*** 350,355 ****
+--- 352,371 ----
+    fixS *fixP;
+    bit_fixS *bitP;
+  
++   /* Assemble 1 extended instruction using instruction extention library. */
++   {
++     unsigned long long  bits; /* encoded instruction */
++     int                 len;  /* instruction length in bytes */
++     if (0 < libccg_assemble_insn (str, &bits, &len))
++     {
++       char *f = frag_more (len);
++       md_number_to_chars (f, bits, len);
++       dwarf2_emit_insn (len);
++       ignore_rest_of_line ();
++       return;
++     }
++   }
++ 
+    know (str);
+    machine_ip (str);
+    toP = frag_more (4);
+diff -crN binutils-2.16.1/include/opcode/brownie32.h binutils-2.16.1/include/opcode/brownie32.h
+*** binutils-2.16.1/include/opcode/brownie32.h	2008-11-11 14:02:34.000000000 +0900
+--- binutils-2.16.1/include/opcode/brownie32.h	2008-11-11 15:09:31.000000000 +0900
+***************
+*** 104,109 ****
+--- 104,111 ----
+  #define  EEQFTYP     0x0000C000
+  #define  ENEQFTYP    0x0000C000
+  
++ /* Use instruction extention library. */
++ #include "opcode/libccg-brownie32.h"
+  
+  struct brownie32_opcode
+  {
+diff -crN binutils-2.16.1/opcodes/Makefile.am binutils-2.16.1/opcodes/Makefile.am
+*** binutils-2.16.1/opcodes/Makefile.am	2008-11-11 14:02:34.000000000 +0900
+--- binutils-2.16.1/opcodes/Makefile.am	2008-11-11 15:16:39.000000000 +0900
+***************
+*** 294,300 ****
+  disassemble.lo: disassemble.c $(INCDIR)/dis-asm.h
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $(srcdir)/disassemble.c
+  
+! libopcodes_la_SOURCES =  dis-buf.c disassemble.c dis-init.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+--- 294,300 ----
+  disassemble.lo: disassemble.c $(INCDIR)/dis-asm.h
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $(srcdir)/disassemble.c
+  
+! libopcodes_la_SOURCES =  dis-buf.c disassemble.c dis-init.c   simple-expr.tab.c libccg-brownie32.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+***************
+*** 468,473 ****
+--- 468,500 ----
+  sh-dis.lo: sh-dis.c
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $<
+  
++ # Instruction extending library for brownie32
++ ##extra_objects_brownie32 = \
++ ##	simple-expr.tab.o\
++ ##	libccg-brownie32.o
++ simple-expr.tab.c: $(srcdir)/simple-expr.y
++ 	${YACC} -y -d -b simple-expr -p libccg_  $<
++ simple-expr-scanner.c: $(srcdir)/simple-expr.l
++ 	${LEX}  -l -i -8 -Plibccg_ -o$@ $<
++ #simple-expr.tab.c: \
++ #	simple-expr-scanner.c\
++ #	$(srcdir)/simple-expr.y\
++ #	$(srcdir)/simple-expr.l
++ #libccg-brownie32.o:
++ #	$(COMPILE) -o $@ -c $(srcdir)/libccg-brownie32.c
++ #libccg-brownie32.o: \
++ #	$(srcdir)/libccg-brownie32.c\
++ #	$(srcdir)/libccg-brownie32.h
++ simple-expr.tab.o: \
++ 	simple-expr.tab.c\
++ 	simple-expr-scanner.c\
++ 	$(srcdir)/simple-expr.y\
++ 	$(srcdir)/simple-expr.l
++ libccg-brownie32.o: \
++ 	$(srcdir)/libccg-brownie32.c\
++ 	$(INCDIR)/opcode/libccg-brownie32.h
++ libopcodes_a_LIBADD += simple-expr.tab.o libccg-brownie32.o
++ 
+  # This dependency stuff is copied from BFD.
+  
+  DEP: dep.sed $(CFILES) $(HFILES) config.h
+diff -crN binutils-2.16.1/opcodes/Makefile.in binutils-2.16.1/opcodes/Makefile.in
+*** binutils-2.16.1/opcodes/Makefile.in	2008-11-11 14:02:34.000000000 +0900
+--- binutils-2.16.1/opcodes/Makefile.in	2008-11-11 15:23:53.000000000 +0900
+***************
+*** 76,82 ****
+  bfdlibLTLIBRARIES_INSTALL = $(INSTALL)
+  LTLIBRARIES = $(bfdlib_LTLIBRARIES)
+  am__DEPENDENCIES_1 =
+! am_libopcodes_la_OBJECTS = dis-buf.lo disassemble.lo dis-init.lo
+  libopcodes_la_OBJECTS = $(am_libopcodes_la_OBJECTS)
+  DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
+  depcomp =
+--- 76,82 ----
+  bfdlibLTLIBRARIES_INSTALL = $(INSTALL)
+  LTLIBRARIES = $(bfdlib_LTLIBRARIES)
+  am__DEPENDENCIES_1 =
+! am_libopcodes_la_OBJECTS = dis-buf.lo disassemble.lo dis-init.lo   simple-expr.tab.lo libccg-brownie32.lo 
+  libopcodes_la_OBJECTS = $(am_libopcodes_la_OBJECTS)
+  DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
+  depcomp =
+***************
+*** 511,517 ****
+  # that's where the version number in Makefile comes from.
+  CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/configure.in
+  INCLUDES = -D_GNU_SOURCE -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ -I$(srcdir)/../intl -I../intl
+! libopcodes_la_SOURCES = dis-buf.c disassemble.c dis-init.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+--- 511,517 ----
+  # that's where the version number in Makefile comes from.
+  CONFIG_STATUS_DEPENDENCIES = $(BFDDIR)/configure.in
+  INCLUDES = -D_GNU_SOURCE -I. -I$(srcdir) -I../bfd -I$(INCDIR) -I$(BFDDIR) @HDEFINES@ -I$(srcdir)/../intl -I../intl
+! libopcodes_la_SOURCES = dis-buf.c disassemble.c dis-init.c   simple-expr.tab.c libccg-brownie32.c
+  # It's desirable to list ../bfd/libbfd.la in DEPENDENCIES and LIBADD.
+  # Unfortunately this causes libtool to add -L$(libdir), referring to the
+  # planned install directory of libbfd.  This can cause us to pick up an
+***************
+*** 1010,1015 ****
+--- 1010,1050 ----
+  sh-dis.lo: sh-dis.c
+  	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $<
+  
++ # Instruction extending library for brownie32
++ ##extra_objects_brownie32 = \
++ ##	simple-expr.tab.o\
++ ##	libccg-brownie32.o
++ simple-expr.tab.c: $(srcdir)/simple-expr.y
++ 	${YACC} -y -d -b simple-expr -p libccg_  $<
++ simple-expr-scanner.c: $(srcdir)/simple-expr.l
++ 	${LEX}  -l -i -8 -Plibccg_ -o$@ $<
++ #simple-expr.tab.c: \
++ #	simple-expr-scanner.c\
++ #	$(srcdir)/simple-expr.y\
++ #	$(srcdir)/simple-expr.l
++ #libccg-brownie32.o:
++ #	$(COMPILE) -o $@ -c $(srcdir)/libccg-brownie32.c
++ #libccg-brownie32.o: \
++ #	$(srcdir)/libccg-brownie32.c\
++ #	$(srcdir)/libccg-brownie32.h
++ simple-expr.tab.lo: simple-expr.tab.c
++ 	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ simple-expr.tab.c
++ libccg-brownie32.lo: $(srcdir)/libccg-brownie32.c
++ 	$(LIBTOOL) --mode=compile $(COMPILE) -c @archdefs@ $(srcdir)/libccg-brownie32.c
++ simple-expr.tab.lo: \
++ 	simple-expr.tab.c\
++ 	simple-expr-scanner.c\
++ 	$(srcdir)/simple-expr.y\
++ 	$(srcdir)/simple-expr.l
++ libccg-brownie32.lo: \
++ 	$(srcdir)/libccg-brownie32.c\
++ 	$(INCDIR)/opcode/libccg-brownie32.h
++ #libopcodes.la: $(libopcodes_la_LIBADD)
++ #libopcodes_a_LIBADD += simple-expr.tab.c libccg-brownie32.c
++ #libopcodes_la_LIBADD += simple-expr.tab.lo libccg-brownie32.lo
++ #libopcodes_la_SOURCES += 
++ #libopcodes_la_OBJECTS += 
++ 
+  # This dependency stuff is copied from BFD.
+  
+  DEP: dep.sed $(CFILES) $(HFILES) config.h
+diff -crN binutils-2.16.1/opcodes/brownie32-dis.c binutils-2.16.1/opcodes/brownie32-dis.c
+*** binutils-2.16.1/opcodes/brownie32-dis.c	2008-11-11 14:02:34.000000000 +0900
+--- binutils-2.16.1/opcodes/brownie32-dis.c	2008-11-11 15:30:15.000000000 +0900
+***************
+*** 676,683 ****
+        (unsigned long) NULL
+    };
+    int brownie32_insn_type_num = ((sizeof brownie32_insn_type) / (sizeof (unsigned long))) - 1;
+!   int status =
+!     (*info->read_memory_func) (memaddr, (bfd_byte *) &buffer[0], 4, info);
+  
+    if (status != 0)
+      {
+--- 676,712 ----
+        (unsigned long) NULL
+    };
+    int brownie32_insn_type_num = ((sizeof brownie32_insn_type) / (sizeof (unsigned long))) - 1;
+!   int status;
+! 
+!   /* Use instruction extention library. */
+!   {
+!     uint64_t  bits;
+!     insn_id_t insn_id;
+!     bfd_byte  membuff[4];
+!     int stat;
+! 
+!     stat = info->read_memory_func (memaddr, membuff, 4, info);
+!     if (stat)
+!     {
+!       info->memory_error_func (stat, memaddr, info);
+!       return -1;
+!     }
+! 
+!     bits = bfd_getb32 (membuff);
+! 
+!     insn_id = libccg_decode_insn (bits);
+!     if (0 <= (int)insn_id
+!         && (int)insn_id < E_INSN_ID_END)
+!     {
+!       static char disasm_buff[256];
+!       int len = libccg_get_insn_length (insn_id);
+!       libccg_disasm_insn (bits, &disasm_buff[0]);
+! 	  (*info->fprintf_func) (info->stream, "%s", &disasm_buff[0]);
+!       return len;
+!     }
+!   }
+! 
+!   status=(*info->read_memory_func) (memaddr, (bfd_byte *) &buffer[0], 4, info);
+  
+    if (status != 0)
+      {

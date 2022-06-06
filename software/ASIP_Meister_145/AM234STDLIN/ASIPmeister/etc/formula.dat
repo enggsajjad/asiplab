@@ -1,0 +1,88 @@
+###################################################################
+#                                                                 #
+#   Copyright 2008 ASIP Solutions, Inc. All rights reserved.      #
+#                   Copyright 2002 PEAS Project                   #
+#                                                                 #
+###################################################################
+
+# 見積り値の絶対的な正しさよりも
+# 異なる設計間で正しいようにする.
+
+# 設計ファイルの情報は、式中では以下のように記述する.
+# ---------------------------------------------------
+# パイプラインステージ			-> P_stage
+# common_stages				->
+# phases_par_stage			->
+# 命令のビット幅			-> W_inst
+# データのビット幅			-> W_data
+# 命令の個数				-> N_inst
+# 命令タイプの個数			-> N_inst_t
+# リソースの個数			-> N_res
+# マルチサイクル・インタロックの使用	-> M_inter
+# データハザード・インタロックの使用	-> D_inter
+# 遅延分岐の使用			->Branch
+# ---------------------------------------------------
+
+# ---------------------------
+# 最終結果	   記述
+# ---------------------------
+# AreaMax	-> area.max
+# AreaTyp	-> area.typ
+# AreaMin	-> area.min
+# DelayMax	-> delay.max
+# DelayTyp	-> delay.typ
+# DelayMin	-> delay.min
+# PowerSMax	-> spower.max
+# PowerSTyp	-> spower.typ
+# PowerSMin	-> spower.min
+# ---------------------------
+
+# ----------------------------
+# システムに用意されている関数
+# ----------------------------
+# 関数名    ,用法
+# log2      ,log2(arg1)
+# ln        ,in(arg1)
+# log10     ,log10(arg1)
+# exp       ,exp(arg1)
+# sqrt      ,sqrt(arg1)
+# ceil      ,ceil(arg1)
+# floor     ,floor(arg1)
+# abs       ,abs(arg1)
+# pow       ,pow(arg1,arg2) := arg1^arg2
+# max       ,max(arg1,arg2)
+# min       ,min(arg1,arg2)
+#-----------------------------
+
+
+
+#area:(A_cnt + A_pipe + A_sel)
+
+area.max:(area.typ * 1.05)
+area.typ:(Sum_area_typ + A_cnt + A_pipe + A_sel)
+area.min:(area.typ * 0.95)
+delay.max:(Max_delay_max)
+delay.typ:(Max_delay_typ)
+delay.min:(Max_delay_min)
+spower.max:(Sum_power_max)
+spower.typ:(Sum_power_typ)
+spower.min:(Sum_power_min)
+
+A_cnt:((alpha1 * P_stage) + ( alpha2 * N_inst) + ( alpha3 * N_res) + alpha4 )
+
+A_pipe:( ( (alpha5 * P_stage) + ( alpha6 * N_inst) + ( alpha7 * N_res) + alpha8 ) * W_data)
+
+A_sel:( ( (alpha9 * P_stage) + ( alpha10 * N_inst) + ( alpha11 * N_res) + alpha12 ) * W_data)
+
+alpha1:196.9579
+alpha2:65.28062
+alpha3:14.9315
+alpha4:-2794.69
+alpha5:11.3438
+alpha6:1.063789
+alpha7:-0.22257
+alpha8:73.0968
+alpha9:-2.6076
+alpha10:7.179509
+alpha11:-0.72209
+alpha12:-288.169

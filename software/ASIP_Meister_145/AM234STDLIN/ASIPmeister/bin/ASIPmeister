@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# ASIP Meister 2.3.4 start up script
+#
+# Copyright (C) 2011 ASIP Solutions, Inc. All rights reserved.
+# Copyright (C) 2001-2005 PEAS project.  All rights reserved.
+
+# search ASIP_MEISTER_HOME directory by itself
+if [ "${0#/}" != "$0" ]; then
+	# starts with "/"
+	ASIP_MEISTER_HOME="$0"
+elif [ "${0#./}" != "$0" ]; then
+	# starts with "./"
+	ASIP_MEISTER_HOME=`pwd`"${0#.}"
+elif [ "${0#../}" != "$0" ]; then
+	# starts with "../"
+	ASIP_MEISTER_HOME=`dirname "$(pwd)"`"${0#..}"
+else
+	# $0 is a command name
+        ASIP_MEISTER_HOME=`which $0`
+fi
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+
+PATH=${ASIP_MEISTER_HOME}/bin:${PATH}:/usr/bin:/sbin:/bin
+
+# default setting
+preference=${ASIP_MEISTER_HOME}/etc/ASIPmeisterStd.ini
+
+log_dir=meister
+if [ "$ASIP_MEISTER_LOG"x = x ]; then
+	ASIP_MEISTER_LOG=${log_dir}/meisterlog.txt
+fi
+if [ "$FHM_SERVER_LOG"x = x ]; then
+	FHM_SERVER_LOG=${log_dir}/fhm_server.log
+fi
+
+# setup for sub-systems
+. $ASIP_MEISTER_HOME/etc/entry.setup.sh
+. $ASIP_MEISTER_HOME/etc/fhm.setup.sh
+. $ASIP_MEISTER_HOME/etc/estimate.setup.sh
+
+# check Java library
+lib_dir=${ASIP_MEISTER_HOME}/lib
+ if [ ! -f $lib_dir/ASIPmeister.jar ]; then
+ 	echo "Can't read $lib_dir/ASIPmeister.jar"
+ 	exit 15
+ fi
+
+# check the preference file
+if [ ! -f $preference ]; then
+	echo "The Preference file not found."
+	exit 20
+fi
+
+# check log directory
+if [ ! -d $log_dir ]; then
+ 	if mkdir $log_dir; then
+ 		true
+ 	else
+		echo "Can't make ${log_dir} directory in current directory"; \
+ 		exit 30
+ 	fi
+fi
+
+# start ASIP Meister
+LANG=C java -Xmn160m -Xmx480m -classpath ${lib_dir}/ASIPmeister.jar peas3.app -p ${preference} \
+    -s $ASIP_MEISTER_HOME -l $ASIP_MEISTER_LOG $*
+
+exit

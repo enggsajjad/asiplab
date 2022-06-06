@@ -1,0 +1,92 @@
+#! /bin/sh
+#######################################################################
+#                                                                     #
+# Copyright (C) 2011 ASIP Solutions, Inc. All rights reserved. #
+#                Copyright (C) 2002-2005 PEAS Project                 #
+#                                                                     #
+#######################################################################
+
+# search ASIP_MEISTER_HOME by itself
+if [ "${0#/}" != "$0" ]; then
+	# starts with "/"
+	ASIP_MEISTER_HOME="$0"
+elif [ "${0#./}" != "$0" ]; then
+	# starts with "./"
+	ASIP_MEISTER_HOME=`pwd`"${0#.}"
+elif [ "${0#../}" != "$0" ]; then
+	# starts with "../"
+	ASIP_MEISTER_HOME=`dirname "$(pwd)"`"${0#..}"
+else
+	# $0 is a command name
+        ASIP_MEISTER_HOME=`which $0`
+fi
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+ASIP_MEISTER_HOME=`dirname ${ASIP_MEISTER_HOME}`
+
+
+sim_dir_name="$2.$4.sim"
+syn_dir_name="$2.$4.syn"
+
+cd meister
+
+${ASIP_MEISTER_HOME}/bin/modpp $2.mod 2> $3
+
+if [ $? = 0 ]
+then
+
+    case $1 in
+    sim|both)
+	test -d $sim_dir_name || mkdir $sim_dir_name
+
+	echo "Generating simulation model..." >> $3
+	case $4 in
+	VHDL)
+		${ASIP_MEISTER_HOME}/bin/rtgen_vhdl -m sim -d $sim_dir_name arch.file \
+			$2.ppd 2>> $3
+	;;
+	Verilog)
+		${ASIP_MEISTER_HOME}/bin/rtgen_vlog -m sim -d $sim_dir_name arch.file \
+			$2.ppd 2>> $3
+	;;
+	SystemC)
+		${ASIP_MEISTER_HOME}/bin/rtgen_sysc -m sim -d $sim_dir_name arch.file \
+			$2.ppd 2>> $3
+	;;
+	esac
+	cd $sim_dir_name
+	${ASIP_MEISTER_HOME}/bin/filter
+	cd ..
+	;;
+    esac
+
+    if [ $1 = "both" ]
+    then
+	echo "" >> $3
+    fi
+
+    case $1 in
+    syn|both)
+	test -d $syn_dir_name || mkdir $syn_dir_name
+
+	echo "Generating synthesizable model..." >> $3
+	case $4 in
+	VHDL)
+		${ASIP_MEISTER_HOME}/bin/rtgen_vhdl -m syn -d $syn_dir_name arch.file \
+			$2.ppd 2>> $3
+	;;
+	Verilog)
+		${ASIP_MEISTER_HOME}/bin/rtgen_vlog -m syn -d $syn_dir_name arch.file \
+			$2.ppd 2>> $3
+	;;
+	SystemC)
+		${ASIP_MEISTER_HOME}/bin/rtgen_sysc -m syn -d $syn_dir_name arch.file \
+			$2.ppd 2>> $3
+	;;
+	esac
+	cd $syn_dir_name
+	${ASIP_MEISTER_HOME}/bin/filter
+	cd ..
+	;;
+    esac
+
+fi

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Copyright (C) 2008 ASIP Solutions, Inc. All rights reserved.
+# Copyright (C) 2003-2005 PEAS Project. All rights reserved.
+
+cd meister
+
+if [ ! -d $2.sw ]; 
+then
+  mkdir $2.sw
+fi
+
+cd $2.sw
+
+echo "Starting compiler description generation." 1> ../$3
+echo "" 1>> ../$3
+ccginput_translator -i ../$2.tr 1>> ../$3
+
+if [ $? -ne 0 ] ; then
+  echo "Error: fault in compiler description generation." >> ../$3
+  exit 1
+fi
+
+echo "Successfully Generated." 1>> ../$3

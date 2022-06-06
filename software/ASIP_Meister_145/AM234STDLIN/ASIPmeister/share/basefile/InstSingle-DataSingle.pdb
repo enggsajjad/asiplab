@@ -1,0 +1,969 @@
+Version{
+ 2.3
+}
+FileType{
+ Design
+}
+Database{
+ path{
+  ./peas3
+ }
+ sufix{
+  pdb
+ }
+ type{
+  PEAS3 DataFile
+ }
+
+}
+Preference{
+ Version{
+  2.3
+ }
+
+}
+AbsLevelArch{
+ Complete{
+  OFF
+ }
+ CPUtype{
+  midTitle{
+   CPU_type
+  }
+  label{
+   CPU type
+  }
+  method{
+   radiobutton  Pipeline
+  }
+  select{
+   Pipeline
+  }
+  Pipeline{
+   midTitle{
+    Pipeline_architecture
+   }
+   StageNum{
+    midTitle{
+     Number_of_stages
+    }
+    label{
+     Num. of Stages
+    }
+    method{
+     factor stage
+    }
+    unit{
+     
+    }
+    select{
+     5
+    }
+
+   }
+   CommonStageNum{
+    midTitle{
+     Number_of_common_stages
+    }
+    label{
+     Num. of Common Stages
+    }
+    method{
+     integer
+    }
+    unit{
+     
+    }
+    select{
+     0
+    }
+    enable{
+     false
+    }
+
+   }
+   DecodeStage{
+    midTitle{
+     
+    }
+    label{
+     Decode Stage
+    }
+    method{
+     integer
+    }
+    unit{
+     [-th]
+    }
+    select{
+     2
+    }
+
+   }
+   StageDef{
+    midTitle{
+     Stage_Definition
+    }
+    method{
+     dylist stage
+    }
+    stage{
+     midTitle{
+      stage
+     }
+     1{
+      midTitle{
+       stage1
+      }
+      label{
+       1
+      }
+      method{
+       specified
+      }
+      unit{
+       [cycle]
+      }
+      select{
+       IF,1,fetch
+      }
+
+     }
+     2{
+      midTitle{
+       stage2
+      }
+      label{
+       2
+      }
+      method{
+       specified
+      }
+      unit{
+       [cycle]
+      }
+      select{
+       ID,1,decode
+      }
+
+     }
+     3{
+      midTitle{
+       stage3
+      }
+      label{
+       3
+      }
+      method{
+       specified
+      }
+      unit{
+       [cycle]
+      }
+      select{
+       EXE,1,exec
+      }
+
+     }
+     4{
+      midTitle{
+       stage4
+      }
+      label{
+       4
+      }
+      method{
+       specified
+      }
+      unit{
+       [cycle]
+      }
+      select{
+       MEM,1,memory_read & memory_write
+      }
+
+     }
+     5{
+      midTitle{
+       stage5
+      }
+      label{
+       5
+      }
+      method{
+       specified
+      }
+      unit{
+       [cycle]
+      }
+      select{
+       WB,1,register_write
+      }
+
+     }
+
+    }
+
+   }
+   MultiscInterlock{
+    midTitle{
+     Multi_cycle_interlock
+    }
+    label{
+     Multi cycle interlock
+    }
+    method{
+     radiobutton Yes No
+    }
+    select{
+     Yes
+    }
+    enable{
+     false
+    }
+
+   }
+   DataHazInterlock{
+    midTitle{
+     Data_hazard_interlock
+    }
+    label{
+     Data hazard interlock
+    }
+    method{
+     radiobutton Yes No
+    }
+    select{
+     No
+    }
+    enable{
+     false
+    }
+
+   }
+   RegBypass{
+    midTitle{
+     Register_bypass
+    }
+    label{
+     Register bypass
+    }
+    method{
+     radiobutton Yes No
+    }
+    select{
+     No
+    }
+    enable{
+     false
+    }
+
+   }
+   DlydBranch{
+    midTitle{
+     Delayed_branch
+    }
+    label{
+     Delayed branch
+    }
+    method{
+     radiobutton Yes No
+    }
+    select{
+     Yes
+    }
+    Yes{
+     midTitle{
+      Number_of_exec_delayed_slot
+     }
+     DelaySlot{
+      midTitle{
+       number
+      }
+      label{
+       Num. of delayed slot
+      }
+      method{
+       integer
+      }
+      unit{
+       [instruction]
+      }
+      select{
+       1
+      }
+
+     }
+
+    }
+
+   }
+
+  }
+
+ }
+ MAXInstBitWidth{
+  midTitle{
+   MAX_instruction_bit_width
+  }
+  label{
+   Max inst. bit width
+  }
+  method{
+   integer
+  }
+  unit{
+   [bit]
+  }
+  select{
+   32
+  }
+
+ }
+ Projectname{
+  midTitle{
+   
+  }
+  label{
+   Project name
+  }
+  method{
+   entry
+  }
+  select{
+   ASIP Meister Project
+  }
+
+ }
+ FhmWorkname{
+  midTitle{
+   Fhm_workname
+  }
+  label{
+   Fhm workname
+  }
+  method{
+   entry
+  }
+  select{
+   FHM_work
+  }
+  enable{
+   false
+  }
+
+ }
+ Revision{
+  midTitle{
+   
+  }
+  label{
+   Revision No.
+  }
+  method{
+   message
+  }
+  select{
+   ver 1.0 : ASIP Meister Project
+  }
+
+ }
+ DesignConst{
+  midTitle{
+   
+  }
+  method{
+   list Design_Goal
+  }
+  Design_Goal{
+   midTitle{
+    construciton
+   }
+   Area{
+    midTitle{
+     Goal_area
+    }
+    label{
+     Goal Area
+    }
+    method{
+     integer
+    }
+    unit{
+     [gates]
+    }
+    select{
+     
+    }
+
+   }
+   Delay{
+    midTitle{
+     Goal_delay
+    }
+    label{
+     Goal Delay
+    }
+    method{
+     integer
+    }
+    unit{
+     [ns]
+    }
+    select{
+     
+    }
+
+   }
+   PowerS{
+    midTitle{
+     Goal_power_S
+    }
+    label{
+     Goal Power S
+    }
+    method{
+     integer
+    }
+    unit{
+     [uW/MHz]
+    }
+    select{
+     
+    }
+
+   }
+
+  }
+
+ }
+ Priority{
+  midTitle{
+   Priority
+  }
+  label{
+   Design Priority
+  }
+  method{
+   radiobutton Area Performance Power
+  }
+  select{
+   Area
+  }
+
+ }
+ MAXDataBitWidth{
+  midTitle{
+   MAX_data_width
+  }
+  label{
+   Max data bit width
+  }
+  method{
+   integer
+  }
+  unit{
+   [bit]
+  }
+  select{
+   32
+  }
+
+ }
+
+}
+EntityDecl{
+ Complete{
+  OFF
+ }
+ ComponentName{
+  
+ }
+ Entity{
+  0{
+   valid{
+    true
+   }
+   name{
+    CLK
+   }
+   type{
+    in
+   }
+   entity{
+    1
+   }
+   attribute{
+    clock
+   }
+
+  }
+  1{
+   valid{
+    true
+   }
+   name{
+    Reset
+   }
+   type{
+    in
+   }
+   entity{
+    1
+   }
+   attribute{
+    reset
+   }
+
+  }
+  2{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    32
+   }
+   attribute{
+    instruction_memory_address_bus
+   }
+
+  }
+  3{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    in
+   }
+   entity{
+    32
+   }
+   attribute{
+    instruction_memory_data_in_bus
+   }
+
+  }
+  12{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    32
+   }
+   attribute{
+    data_memory_address_bus
+   }
+
+  }
+  13{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    in
+   }
+   entity{
+    32
+   }
+   attribute{
+    data_memory_data_in_bus
+   }
+
+  }
+  14{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    32
+   }
+   attribute{
+    data_memory_data_out_bus
+   }
+
+  }
+  17{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    1
+   }
+   attribute{
+    data_memory_rw_bus
+   }
+
+  }
+  18{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    2
+   }
+   attribute{
+    data_memory_write_mode_bus
+   }
+
+  }
+  19{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    1
+   }
+   attribute{
+    data_memory_ext_mode_bus
+   }
+
+  }
+  22{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    in
+   }
+   entity{
+    1
+   }
+   attribute{
+    interrupt
+   }
+
+  }
+  23{
+   valid{
+    false
+   }
+   name{
+    
+   }
+   type{
+    out
+   }
+   entity{
+    
+   }
+   attribute{
+    unspecified
+   }
+
+  }
+
+ }
+
+}
+ResourceDecl{
+ Complete{
+  OFF
+ }
+ Instance{
+  
+ }
+
+}
+StorageSpec{
+ Complete{
+  OFF
+ }
+ RegisterFile{
+  
+ }
+ Register{
+  
+ }
+ Memory{
+  
+ }
+
+}
+InstructionDecl{
+ Complete{
+  OFF
+ }
+ MaxInstId{
+  -1
+ }
+ InstructionType{
+  
+ }
+ Instruction{
+  
+ }
+
+}
+OperationDesc{
+ Complete{
+  OFF
+ }
+ InstBehavior{
+  
+ }
+ ExceptionBehavior{
+  
+ }
+
+}
+CdefinitionDecl{
+ Complete{
+  OFF
+ }
+ C_data_type{
+  0{
+   type{
+    char
+   }
+   alignment{
+    8
+   }
+   size{
+    8
+   }
+
+  }
+  1{
+   type{
+    short
+   }
+   alignment{
+    16
+   }
+   size{
+    16
+   }
+
+  }
+  2{
+   type{
+    int
+   }
+   alignment{
+    32
+   }
+   size{
+    32
+   }
+
+  }
+  3{
+   type{
+    long
+   }
+   alignment{
+    32
+   }
+   size{
+    32
+   }
+
+  }
+  4{
+   type{
+    float
+   }
+   alignment{
+    32
+   }
+   size{
+    32
+   }
+
+  }
+  5{
+   type{
+    double
+   }
+   alignment{
+    64
+   }
+   size{
+    64
+   }
+
+  }
+  6{
+   type{
+    pointer
+   }
+   alignment{
+    32
+   }
+   size{
+    32
+   }
+
+  }
+  7{
+   type{
+    struct
+   }
+   alignment{
+    8
+   }
+   size{
+    none
+   }
+
+  }
+  8{
+   type{
+    stack
+   }
+   alignment{
+    32
+   }
+   size{
+    none
+   }
+
+  }
+  9{
+   type{
+    data
+   }
+   alignment{
+    8
+   }
+   size{
+    none
+   }
+
+  }
+
+ }
+ Data_macro{
+  
+ }
+ C_ckf_prototype{
+  
+ }
+
+}
+MOD{
+ Complete{
+  OFF
+ }
+ Common{
+  
+ }
+ Instruction{
+  
+ }
+ Exception{
+  
+ }
+ Macro{
+  
+ }
+
+}
+Estimation{
+ ArchLevel{
+  Complete{
+   OFF
+  }
+
+ }
+ BehaviorLevel{
+  Complete{
+   OFF
+  }
+
+ }
+ RTLevel{
+  Complete{
+   OFF
+  }
+
+ }
+
+}
+Generation{
+ ISSmodel{
+  Complete{
+   OFF
+  }
+
+ }
+ Model{
+  Complete{
+   OFF
+  }
+  lang{
+   0{
+    VHDL
+   }
+   1{
+    Verilog
+   }
+
+  }
+
+ }
+
+}
+SW_Generation{
+ SWmodel{
+  Complete{
+   OFF
+  }
+
+ }
+
+}
+ASM_Generation{
+ ASMmodel{
+  Complete{
+   OFF
+  }
+
+ }
+
+}

@@ -1,0 +1,1871 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<FHM>
+  <model_name> dummy_register </model_name>
+
+  <model>
+    <design_level> behavior </design_level>
+    <version> 1.0 </version>
+    <author> <![CDATA[ Hirofumi IWATO ]]> </author>
+    <affiliation> <![CDATA[ ASIP Solutions ]]> </affiliation>
+    <model_info> <![CDATA[
+]]> </model_info>
+
+    <parameter>
+      <parameter_value key="bit_width">
+        <value> 1 </value>
+        <value> 2 </value>
+        <value> 3 </value>
+        <value> 4 </value>
+        <value> 5 </value>
+        <value> 6 </value>
+        <value> 7 </value>
+        <value> 8 </value>
+        <value> 9 </value>
+        <value> 10 </value>
+        <value> 11 </value>
+        <value> 12 </value>
+        <value> 13 </value>
+        <value> 14 </value>
+        <value> 15 </value>
+        <value> 16 </value>
+        <value> 17 </value>
+        <value> 18 </value>
+        <value> 19 </value>
+        <value> 20 </value>
+        <value> 21 </value>
+        <value> 22 </value>
+        <value> 23 </value>
+        <value> 24 </value>
+        <value> 25 </value>
+        <value> 26 </value>
+        <value> 27 </value>
+        <value> 28 </value>
+        <value> 29 </value>
+        <value> 30 </value>
+        <value> 31 </value>
+        <value> 32 </value>
+        <value> 33 </value>
+        <value> 34 </value>
+        <value> 35 </value>
+        <value> 36 </value>
+        <value> 37 </value>
+        <value> 38 </value>
+        <value> 39 </value>
+        <value> 40 </value>
+        <value> 41 </value>
+        <value> 42 </value>
+        <value> 43 </value>
+        <value> 44 </value>
+        <value> 45 </value>
+        <value> 46 </value>
+        <value> 47 </value>
+        <value> 48 </value>
+        <value> 49 </value>
+        <value> 50 </value>
+        <value> 51 </value>
+        <value> 52 </value>
+        <value> 53 </value>
+        <value> 54 </value>
+        <value> 55 </value>
+        <value> 56 </value>
+        <value> 57 </value>
+        <value> 58 </value>
+        <value> 59 </value>
+        <value> 60 </value>
+        <value> 61 </value>
+        <value> 62 </value>
+        <value> 63 </value>
+        <value> 64 </value>
+        <value> 65 </value>
+        <value> 66 </value>
+        <value> 67 </value>
+        <value> 68 </value>
+        <value> 69 </value>
+        <value> 70 </value>
+        <value> 71 </value>
+        <value> 72 </value>
+        <value> 73 </value>
+        <value> 74 </value>
+        <value> 75 </value>
+        <value> 76 </value>
+        <value> 77 </value>
+        <value> 78 </value>
+        <value> 79 </value>
+        <value> 80 </value>
+        <value> 128 </value>
+      </parameter_value>
+    </parameter>
+
+    <function_description>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# This script generates register function definition in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width    = $ARGV[0];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ("$bit_width" == "1") {
+    $range = "";
+}
+else {
+    $W1 = $bit_width - 1;
+    $range = "[$W1:0]";
+}
+
+{
+print <<FHM_DL_FUNCTION
+/** No operation */
+function nop {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit enb;
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '0';
+      reset = '0';
+    }
+  }
+}
+
+/** reset */
+function reset {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      reset = '1';
+    }
+  }
+}
+
+/** register write */
+function write {
+  input {
+    bit $range data_in;
+  }
+  output {
+  }
+  control {
+    in bit enb;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '1';
+    }
+  }
+}
+
+/** register read */
+function read {
+  input {
+  }
+  output {
+    bit $range data_out;
+  }
+  control {
+  }
+  protocol {
+  }
+}
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_description>
+
+    <function_conv>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# This script generates register function definition in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width    = $ARGV[0];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ("$bit_width" == "1") {
+    $range = "";
+}
+else {
+    $W1 = $bit_width - 1;
+    $range = "[$W1:0]";
+}
+
+{
+print <<FHM_DL_FUNCTION
+/** No operation */
+function nop {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit enb;
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '0';
+      reset = '0';
+    }
+  }
+}
+
+/** reset */
+function reset {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      reset = '1';
+    }
+  }
+}
+
+/** register write */
+function write {
+  input {
+    bit $range data_in;
+  }
+  output {
+  }
+  control {
+    in bit enb;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '1';
+    }
+  }
+}
+
+/** register read */
+function read {
+  input {
+  }
+  output {
+    bit $range data_out;
+  }
+  control {
+  }
+  protocol {
+  }
+}
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_conv>
+
+    <function_port>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# This script generates register port information in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width    = $ARGV[0];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+$msb = $bit_width-1;
+
+{
+print <<FHM_DL_TOP
+clock	in	bit		clock
+async_reset	in	bit		reset
+reset	in	bit		ctrl
+enb	in	bit		ctrl
+FHM_DL_TOP
+}
+if ("$bit_width" == "1") {
+print <<FHM_DL_ONE
+data_in	in	bit		data
+data_out	out	bit		data
+FHM_DL_ONE
+}
+else {
+print <<FHM_DL_MORE
+data_in	in	bit_vector   $msb   0	data
+data_out	out	bit_vector   $msb   0	data
+FHM_DL_MORE
+}
+exit (0);
+        ]]>
+      </script>
+    </function_port>
+
+    <design>
+      <design_lang> vhdl </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# This script generates register instance in synthesis level
+# parameter : instance_name bit_width
+
+if ($#ARGV != 1) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+$instance_name = $ARGV[0];
+$bit_width     = $ARGV[1];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ($bit_width == 1) {
+    $zero = "\'0\'";
+}
+else {
+    $zero = "\"" . "0" x $bit_width . "\"";
+}
+
+$W1 = $bit_width - 1;
+
+{
+print <<FHM_DL_COMMON
+
+-- Module     : $bit_width-bit Positive Edge Trigger Register
+-- Feature    : positive edge trigger
+-- References : Started from scratch
+-- Author     : Designed by T.Morifuji (c)1997.
+
+-- Version    : 1.0  :
+
+-- Functionality :
+--  port
+--   clock       : clock port
+--   async_reset : asynchronous reset port
+--   reset       : synchronous reset port
+--   enb         : write enable control
+--   data_in     : input data
+--   data_out    : output data
+
+-- Comment :
+
+library IEEE;
+  use IEEE.std_logic_1164.all;
+  use IEEE.std_logic_unsigned.all;
+
+entity $instance_name is
+  port (clock       : in std_logic;
+        async_reset : in std_logic;
+        reset       : in std_logic;
+        enb         : in std_logic;
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1") {
+    print <<FHM_DL_ONE
+        data_in     : in std_logic;
+        data_out    : out std_logic);
+FHM_DL_ONE
+}
+else {
+    print <<FHM_DL_MORE
+        data_in     : in std_logic_vector($W1 downto 0);
+        data_out    : out std_logic_vector($W1 downto 0) );
+FHM_DL_MORE
+}
+{
+print <<FHM_DL_TOP_OF_ARCHITECTURE
+end $instance_name;
+
+architecture logic of $instance_name is
+begin
+
+  -- through
+  data_out <= data_in;
+
+end logic;
+FHM_DL_TOP_OF_ARCHITECTURE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <design>
+      <design_lang> Verilog </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates instance for register in synthesis level
+# parameter : instance_name bit_width
+
+
+if ($#ARGV != 1) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+$instance_name = $ARGV[0];
+$bit_width     = $ARGV[1];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+$W1 = $bit_width - 1;
+
+{
+print <<FHM_DL_COMMON
+// Module     : $bit_width-bit Positive Edge Trigger Register
+// Feature    : positive edge trigger
+// References : Started from scratch
+// Author     : Designed by T.Morifuji (c)1997.
+// Version    : 1.0  :
+// Functionality :
+//  port
+//   clock       : clock port
+//   async_reset : asynchronous reset port
+//   reset       : synchronous reset port
+//   enb         : write enable control
+//   data_in     : input data
+//   data_out    : output data
+// Comment    :
+
+module $instance_name (
+    clock      ,
+    async_reset,
+    reset      ,
+    enb        ,
+    data_in    ,
+    data_out   );
+
+input         clock      ;
+input         async_reset;
+input         reset      ;
+input         enb        ;
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1"){
+ print <<FHM_DL_ONE
+input         data_in    ;
+output        data_out   ;
+
+FHM_DL_ONE
+}
+else{
+print <<FHM_DL_MULTIPLE
+input  [$W1:0] data_in    ;
+output [$W1:0] data_out   ;
+
+FHM_DL_MULTIPLE
+}
+{
+print <<FHM_DL_COMMON
+wire        clock      ;
+wire        async_reset;
+wire        reset      ;
+wire        enb        ;
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1"){
+ print <<FHM_DL_ONE
+wire         data_in    ;
+wire         data_out   ;
+
+FHM_DL_ONE
+}
+else{
+print <<FHM_DL_MULTIPLE
+wire  [$W1:0] data_in    ;
+wire  [$W1:0] data_out   ;
+FHM_DL_MULTIPLE
+}
+{
+print <<FHM_DL_COMMON
+
+  // through
+  assign data_out = data_in;
+
+endmodule
+FHM_DL_COMMON
+}
+exit(0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <design>
+      <design_lang> SystemC Header </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# This script generates register instance in synthesis level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ($bit_width == 1) {
+    $zero = "false";
+}
+else {
+    $zero = "0";
+}
+
+$W1 = $bit_width - 1;
+
+if($bit_width <= 64) {
+  $data_type = "sc_dt::sc_uint<$bit_width>";
+} else {
+  $data_type = "sc_dt::sc_biguint<$bit_width>";
+}
+
+$macro = "__" . uc($name_space) . "_" . uc($instance_name) . "_H__";
+
+{
+print <<FHM_DL_COMMON
+#ifndef ${macro}
+#define ${macro} 1
+
+// Module     : $bit_width-bit Positive Edge Trigger Register
+// Feature    : positive edge trigger
+// References : Started from scratch
+// Author     : Designed by T.Morifuji (c)1997.
+
+// Version    : 1.0  :
+
+// Functionality :
+//  port
+//   clock       : clock port
+//   async_reset : asynchronous reset port
+//   reset       : synchronous reset port
+//   enb         : write enable control
+//   data_in     : input data
+//   data_out    : output data
+
+// Comment :
+
+#include <systemc>
+
+namespace $name_space {
+  SC_MODULE($instance_name) {
+    sc_core::sc_in<bool> clock;
+    sc_core::sc_in<bool> async_reset;
+    sc_core::sc_in<bool> reset;
+    sc_core::sc_in<bool> enb;
+
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1") {
+    print <<FHM_DL_ONE
+    sc_core::sc_in<bool> data_in;
+    sc_core::sc_out<bool> data_out;
+FHM_DL_ONE
+}
+else {
+    print <<FHM_DL_MORE
+    sc_core::sc_in< $data_type > data_in;
+    sc_core::sc_out< $data_type > data_out;
+FHM_DL_MORE
+}
+{
+print <<FHM_DL_TOP_OF_ARCHITECTURE
+
+    SC_CTOR($instance_name) :
+      clock("clock"),
+      async_reset("async_reset"),
+      reset("reset"),
+      enb("enb"),
+      data_in("data_in"),
+      data_out("data_out")
+    {
+      SC_METHOD(process);
+      sensitive << data_in;
+    }
+
+    void process();
+  };
+};
+
+#endif // $macro
+FHM_DL_TOP_OF_ARCHITECTURE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <design>
+      <design_lang> SystemC Program </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# This script generates register instance in synthesis level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ($bit_width == 1) {
+    $zero = "false";
+}
+else {
+    $zero = "0";
+}
+
+$W1 = $bit_width - 1;
+
+{
+print <<FHM_DL_COMMON
+#include "$instance_name.h"
+
+// Module     : $bit_width-bit Positive Edge Trigger Register
+// Feature    : positive edge trigger
+// References : Started from scratch
+// Author     : Designed by T.Morifuji (c)1997.
+
+// Version    : 1.0  :
+
+// Functionality :
+//  port
+//   clock       : clock port
+//   async_reset : asynchronous reset port
+//   reset       : synchronous reset port
+//   enb         : write enable control
+//   data_in     : input data
+//   data_out    : output data
+
+// Comment :
+
+FHM_DL_COMMON
+}
+{
+print <<FHM_DL_TOP_OF_ARCHITECTURE
+void ${name_space}::${instance_name}::process()
+{
+  // through
+  data_out.write( data_in.read() );
+}
+FHM_DL_TOP_OF_ARCHITECTURE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+  </model>
+  <model>
+    <design_level> synthesis </design_level>
+    <version> 1.0 </version>
+    <author> <![CDATA[ Hirofumi IWATO ]]> </author>
+    <affiliation> <![CDATA[ ASIP Solutions ]]> </affiliation>
+    <model_info> <![CDATA[
+]]> </model_info>
+
+    <parameter>
+      <parameter_value key="bit_width">
+        <value> 1 </value>
+        <value> 2 </value>
+        <value> 3 </value>
+        <value> 4 </value>
+        <value> 5 </value>
+        <value> 6 </value>
+        <value> 7 </value>
+        <value> 8 </value>
+        <value> 9 </value>
+        <value> 10 </value>
+        <value> 11 </value>
+        <value> 12 </value>
+        <value> 13 </value>
+        <value> 14 </value>
+        <value> 15 </value>
+        <value> 16 </value>
+        <value> 17 </value>
+        <value> 18 </value>
+        <value> 19 </value>
+        <value> 20 </value>
+        <value> 21 </value>
+        <value> 22 </value>
+        <value> 23 </value>
+        <value> 24 </value>
+        <value> 25 </value>
+        <value> 26 </value>
+        <value> 27 </value>
+        <value> 28 </value>
+        <value> 29 </value>
+        <value> 30 </value>
+        <value> 31 </value>
+        <value> 32 </value>
+        <value> 33 </value>
+        <value> 34 </value>
+        <value> 35 </value>
+        <value> 36 </value>
+        <value> 37 </value>
+        <value> 38 </value>
+        <value> 39 </value>
+        <value> 40 </value>
+        <value> 41 </value>
+        <value> 42 </value>
+        <value> 43 </value>
+        <value> 44 </value>
+        <value> 45 </value>
+        <value> 46 </value>
+        <value> 47 </value>
+        <value> 48 </value>
+        <value> 49 </value>
+        <value> 50 </value>
+        <value> 51 </value>
+        <value> 52 </value>
+        <value> 53 </value>
+        <value> 54 </value>
+        <value> 55 </value>
+        <value> 56 </value>
+        <value> 57 </value>
+        <value> 58 </value>
+        <value> 59 </value>
+        <value> 60 </value>
+        <value> 61 </value>
+        <value> 62 </value>
+        <value> 63 </value>
+        <value> 64 </value>
+        <value> 65 </value>
+        <value> 66 </value>
+        <value> 67 </value>
+        <value> 68 </value>
+        <value> 69 </value>
+        <value> 70 </value>
+        <value> 71 </value>
+        <value> 72 </value>
+        <value> 73 </value>
+        <value> 74 </value>
+        <value> 75 </value>
+        <value> 76 </value>
+        <value> 77 </value>
+        <value> 78 </value>
+        <value> 79 </value>
+        <value> 80 </value>
+        <value> 128 </value>
+      </parameter_value>
+    </parameter>
+
+    <function_description>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# This script generates register function definition in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width    = $ARGV[0];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ("$bit_width" == "1") {
+    $range = "";
+}
+else {
+    $W1 = $bit_width - 1;
+    $range = "[$W1:0]";
+}
+
+{
+print <<FHM_DL_FUNCTION
+/** No operation */
+function nop {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit enb;
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '0';
+      reset = '0';
+    }
+  }
+}
+
+/** reset */
+function reset {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      reset = '1';
+    }
+  }
+}
+
+/** register write */
+function write {
+  input {
+    bit $range data_in;
+  }
+  output {
+  }
+  control {
+    in bit enb;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '1';
+    }
+  }
+}
+
+/** register read */
+function read {
+  input {
+  }
+  output {
+    bit $range data_out;
+  }
+  control {
+  }
+  protocol {
+  }
+}
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_description>
+
+    <function_conv>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# This script generates register function definition in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width    = $ARGV[0];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ("$bit_width" == "1") {
+    $range = "";
+}
+else {
+    $W1 = $bit_width - 1;
+    $range = "[$W1:0]";
+}
+
+{
+print <<FHM_DL_FUNCTION
+/** No operation */
+function nop {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit enb;
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '0';
+      reset = '0';
+    }
+  }
+}
+
+/** reset */
+function reset {
+  input {
+  }
+  output {
+  }
+  control {
+    in bit reset;
+  }
+  protocol {
+    single_cycle_protocol {
+      reset = '1';
+    }
+  }
+}
+
+/** register write */
+function write {
+  input {
+    bit $range data_in;
+  }
+  output {
+  }
+  control {
+    in bit enb;
+  }
+  protocol {
+    single_cycle_protocol {
+      enb = '1';
+    }
+  }
+}
+
+/** register read */
+function read {
+  input {
+  }
+  output {
+    bit $range data_out;
+  }
+  control {
+  }
+  protocol {
+  }
+}
+FHM_DL_FUNCTION
+}
+exit (0);
+        ]]>
+      </script>
+    </function_conv>
+
+    <function_port>
+      <script>
+        <![CDATA[
+#!/usr/bin/perl
+# This script generates register port information in synthesis level
+# parameter : bit_width
+
+if ($#ARGV != 0) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script bit_width\n";
+    exit (100);
+}
+
+$bit_width    = $ARGV[0];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+$msb = $bit_width-1;
+
+{
+print <<FHM_DL_TOP
+clock	in	bit		clock
+async_reset	in	bit		reset
+reset	in	bit		ctrl
+enb	in	bit		ctrl
+FHM_DL_TOP
+}
+if ("$bit_width" == "1") {
+print <<FHM_DL_ONE
+data_in	in	bit		data
+data_out	out	bit		data
+FHM_DL_ONE
+}
+else {
+print <<FHM_DL_MORE
+data_in	in	bit_vector   $msb   0	data
+data_out	out	bit_vector   $msb   0	data
+FHM_DL_MORE
+}
+exit (0);
+        ]]>
+      </script>
+    </function_port>
+
+    <design>
+      <design_lang> vhdl </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# This script generates register instance in synthesis level
+# parameter : instance_name bit_width
+
+if ($#ARGV != 1) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+$instance_name = $ARGV[0];
+$bit_width     = $ARGV[1];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ($bit_width == 1) {
+    $zero = "\'0\'";
+}
+else {
+    $zero = "\"" . "0" x $bit_width . "\"";
+}
+
+$W1 = $bit_width - 1;
+
+{
+print <<FHM_DL_COMMON
+
+-- Module     : $bit_width-bit Positive Edge Trigger Register
+-- Feature    : positive edge trigger
+-- References : Started from scratch
+-- Author     : Designed by T.Morifuji (c)1997.
+
+-- Version    : 1.0  :
+
+-- Functionality :
+--  port
+--   clock       : clock port
+--   async_reset : asynchronous reset port
+--   reset       : synchronous reset port
+--   enb         : write enable control
+--   data_in     : input data
+--   data_out    : output data
+
+-- Comment :
+
+library IEEE;
+  use IEEE.std_logic_1164.all;
+  use IEEE.std_logic_unsigned.all;
+
+entity $instance_name is
+  port (clock       : in std_logic;
+        async_reset : in std_logic;
+        reset       : in std_logic;
+        enb         : in std_logic;
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1") {
+    print <<FHM_DL_ONE
+        data_in     : in std_logic;
+        data_out    : out std_logic);
+FHM_DL_ONE
+}
+else {
+    print <<FHM_DL_MORE
+        data_in     : in std_logic_vector($W1 downto 0);
+        data_out    : out std_logic_vector($W1 downto 0) );
+FHM_DL_MORE
+}
+{
+print <<FHM_DL_TOP_OF_ARCHITECTURE
+end $instance_name;
+
+architecture logic of $instance_name is
+begin
+
+  -- through
+  data_out <= data_in;
+
+end logic;
+FHM_DL_TOP_OF_ARCHITECTURE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+
+      <synthesis>
+        <parameter></parameter>
+        <synthesis_script>
+          <script>
+            <![CDATA[ ]]>
+          </script>
+        </synthesis_script>
+      </synthesis>
+    </design>
+
+    <design>
+      <design_lang> Verilog </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# this script generates instance for register in synthesis level
+# parameter : instance_name bit_width
+
+
+if ($#ARGV != 1) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script instance_name bit_width\n";
+    exit (100);
+}
+
+$instance_name = $ARGV[0];
+$bit_width     = $ARGV[1];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+$W1 = $bit_width - 1;
+
+{
+print <<FHM_DL_COMMON
+// Module     : $bit_width-bit Positive Edge Trigger Register
+// Feature    : positive edge trigger
+// References : Started from scratch
+// Author     : Designed by T.Morifuji (c)1997.
+// Version    : 1.0  :
+// Functionality :
+//  port
+//   clock       : clock port
+//   async_reset : asynchronous reset port
+//   reset       : synchronous reset port
+//   enb         : write enable control
+//   data_in     : input data
+//   data_out    : output data
+// Comment    :
+
+module $instance_name (
+    clock      ,
+    async_reset,
+    reset      ,
+    enb        ,
+    data_in    ,
+    data_out   );
+
+input         clock      ;
+input         async_reset;
+input         reset      ;
+input         enb        ;
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1"){
+ print <<FHM_DL_ONE
+input         data_in    ;
+output        data_out   ;
+
+FHM_DL_ONE
+}
+else{
+print <<FHM_DL_MULTIPLE
+input  [$W1:0] data_in    ;
+output [$W1:0] data_out   ;
+
+FHM_DL_MULTIPLE
+}
+{
+print <<FHM_DL_COMMON
+wire        clock      ;
+wire        async_reset;
+wire        reset      ;
+wire        enb        ;
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1"){
+ print <<FHM_DL_ONE
+wire         data_in    ;
+wire         data_out   ;
+
+FHM_DL_ONE
+}
+else{
+print <<FHM_DL_MULTIPLE
+wire  [$W1:0] data_in    ;
+wire  [$W1:0] data_out   ;
+FHM_DL_MULTIPLE
+}
+{
+print <<FHM_DL_COMMON
+
+  // through
+  assign data_out = data_in;
+
+endmodule
+FHM_DL_COMMON
+}
+exit(0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+
+      <synthesis>
+        <parameter></parameter>
+        <synthesis_script>
+          <script>
+            <![CDATA[ ]]>
+          </script>
+        </synthesis_script>
+      </synthesis>
+    </design>
+
+    <design>
+      <design_lang> SystemC Header </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# This script generates register instance in synthesis level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ($bit_width == 1) {
+    $zero = "false";
+}
+else {
+    $zero = "0";
+}
+
+$W1 = $bit_width - 1;
+
+if($bit_width <= 64) {
+  $data_type = "sc_dt::sc_uint<$bit_width>";
+} else {
+  $data_type = "sc_dt::sc_biguint<$bit_width>";
+}
+
+$macro = "__" . uc($name_space) . "_" . uc($instance_name) . "_H__";
+
+{
+print <<FHM_DL_COMMON
+#ifndef ${macro}
+#define ${macro} 1
+
+// Module     : $bit_width-bit Positive Edge Trigger Register
+// Feature    : positive edge trigger
+// References : Started from scratch
+// Author     : Designed by T.Morifuji (c)1997.
+
+// Version    : 1.0  :
+
+// Functionality :
+//  port
+//   clock       : clock port
+//   async_reset : asynchronous reset port
+//   reset       : synchronous reset port
+//   enb         : write enable control
+//   data_in     : input data
+//   data_out    : output data
+
+// Comment :
+
+#include <systemc>
+
+namespace $name_space {
+  SC_MODULE($instance_name) {
+    sc_core::sc_in<bool> clock;
+    sc_core::sc_in<bool> async_reset;
+    sc_core::sc_in<bool> reset;
+    sc_core::sc_in<bool> enb;
+
+FHM_DL_COMMON
+}
+if ("$bit_width" == "1") {
+    print <<FHM_DL_ONE
+    sc_core::sc_in<bool> data_in;
+    sc_core::sc_out<bool> data_out;
+FHM_DL_ONE
+}
+else {
+    print <<FHM_DL_MORE
+    sc_core::sc_in< $data_type > data_in;
+    sc_core::sc_out< $data_type > data_out;
+FHM_DL_MORE
+}
+{
+print <<FHM_DL_TOP_OF_ARCHITECTURE
+
+    SC_CTOR($instance_name) :
+      clock("clock"),
+      async_reset("async_reset"),
+      reset("reset"),
+      enb("enb"),
+      data_in("data_in"),
+      data_out("data_out")
+    {
+      SC_METHOD(process);
+      sensitive << data_in;
+    }
+
+    void process();
+  };
+};
+
+#endif // $macro
+FHM_DL_TOP_OF_ARCHITECTURE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <design>
+      <design_lang> SystemC Program </design_lang>
+
+      <instance>
+        <script>
+          <![CDATA[
+#!/usr/bin/perl
+# This script generates register instance in synthesis level
+# parameter : name_space instance_name bit_width
+
+if ($#ARGV != 2) {
+    print "number of parameters is wrong.\n";
+    print "usage : this_script name_space instance_name bit_width\n";
+    exit (100);
+}
+
+$name_space    = $ARGV[0];
+$instance_name = $ARGV[1];
+$bit_width     = $ARGV[2];
+
+if ($bit_width > 80) {
+    if ($bit_width != 128) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+    }
+}
+elsif ($bit_width < 1) {
+    print "bit_width $bit_width is not supported.\n";
+    exit (100);
+}
+
+if ($bit_width == 1) {
+    $zero = "false";
+}
+else {
+    $zero = "0";
+}
+
+$W1 = $bit_width - 1;
+
+{
+print <<FHM_DL_COMMON
+#include "$instance_name.h"
+
+// Module     : $bit_width-bit Positive Edge Trigger Register
+// Feature    : positive edge trigger
+// References : Started from scratch
+// Author     : Designed by T.Morifuji (c)1997.
+
+// Version    : 1.0  :
+
+// Functionality :
+//  port
+//   clock       : clock port
+//   async_reset : asynchronous reset port
+//   reset       : synchronous reset port
+//   enb         : write enable control
+//   data_in     : input data
+//   data_out    : output data
+
+// Comment :
+
+FHM_DL_COMMON
+}
+{
+print <<FHM_DL_TOP_OF_ARCHITECTURE
+void ${name_space}::${instance_name}::process()
+{
+  // through
+  data_out.write( data_in.read() );
+}
+FHM_DL_TOP_OF_ARCHITECTURE
+}
+exit (0);
+          ]]>
+        </script>
+      </instance>
+
+      <entity>
+        <script>
+          <![CDATA[
+
+          ]]>
+        </script>
+      </entity>
+
+      <testvector>
+        <testvector_script>
+          <![CDATA[ ]]>
+        </testvector_script>
+      </testvector>
+    </design>
+
+    <estimation>
+      <estimation_data>
+        <library name="OSAKA">
+
+          <est_type name="shape">
+            <est_index name="area">
+              <unit> mm2 </unit>
+              <translate>
+                <translate_value key="gate"> 4201.68 </translate_value>>
+                <translate_value key="mm2">  1 </translate_value>>
+              </translate>
+
+              <parameters name="">
+                <max>
+                  <data bit_width="1"> 0.0 </data>
+                </max>
+                <min>
+                  <data bit_width="1"> 0.0 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                  <priority name="delay">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                  <priority name="power">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+
+            <est_index name="aspect_ratio">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="height">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="width">
+              <!-- Dummy yet -->
+            </est_index>
+          </est_type>
+
+          <est_type name="timing">
+            <est_index name="delay">
+              <unit> ns </unit>
+              <parameters name="">
+                <max>
+                  <data bit_width="1"> 0.0 </data>
+                </max>
+                <min>
+                  <data bit_width="1"> 0.0 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                  <priority name="delay">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                  <priority name="power">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+
+            <est_index name="delay_fullpath">
+              <!-- Dummy yet -->
+            </est_index>
+          </est_type>
+
+          <est_type name="power">
+            <est_index name="static_power">
+              <unit> mW </unit>
+              <parameters name="">
+                <max>
+                  <data bit_width="1"> 0.0 </data>
+                </max>
+                <min>
+                  <data bit_width="1"> 0.0 </data>
+                </min>
+                <typ>
+                  <priority name="area">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                  <priority name="delay">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                  <priority name="power">
+                  <data bit_width="1"> 0.0 </data>
+                  </priority>
+                </typ>
+              </parameters>
+            </est_index>
+          </est_type>
+
+          <est_type name="function_cycle">
+              <!-- Dummy yet -->
+          </est_type>
+
+          <est_type name="function_power">
+              <!-- Dummy yet -->
+          </est_type>
+        </library>
+      </estimation_data>
+
+      <estimation_method>
+
+          <est_type name="shape">
+
+            <est_index name="area">
+
+              <parameters name="">
+                <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+                </script>
+              </parameters>
+            </est_index>
+
+            <est_index name="aspect_ratio">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="height">
+              <!-- Dummy yet -->
+            </est_index>
+
+            <est_index name="width">
+              <!-- Dummy yet -->
+            </est_index>
+          </est_type>
+
+          <est_type name="timing">
+            <est_index name="delay">
+              <parameters name="">
+                <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+                </script>
+              </parameters>
+            </est_index>
+
+            <est_index name="delay_fullpath">
+              <parameters name="">
+                <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+                </script>
+              </parameters>
+            </est_index>
+          </est_type>
+
+          <est_type name="power">
+            <est_index name="static_power">
+              <parameters name="">
+                <script>
+                <![CDATA[
+#!/usr/bin/perl
+print "0";
+                ]]>
+                </script>
+              </parameters>
+            </est_index>
+          </est_type>
+
+          <est_type name="function_cycle">
+              <!-- Dummy yet -->
+          </est_type>
+
+          <est_type name="function_power">
+              <!-- Dummy yet -->
+          </est_type>
+      </estimation_method>
+
+    </estimation>
+
+
+  </model>
+</FHM>

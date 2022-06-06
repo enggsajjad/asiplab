@@ -1,0 +1,39 @@
+<FHM_Structure>
+<![CDATA[
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                %
+%    Copyright 2005 ASIP Solutions, Inc. All rights reserved.    %
+%              Copyright 2002-2005 PEAS Project                  %
+%                                                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+]]>
+	<library name="basicfhmdb">
+		 <class name="computational">
+			<model>alu</model>
+			<model>mini_alu</model>
+			<model>adder</model>
+			<model>divider</model>
+			<model>extender</model>
+			<model>multiplier</model>
+			<model>rotator</model>
+			<model>shifter</model>
+			<model>multiplexor</model>
+		</class>
+		<class name="storage">
+			<model>register</model>
+			<model>registerfile</model>
+		</class>
+	</library>
+	<library name="workdb">
+		 <class name="FHM_work">
+			<model>mifu</model>
+			<model>pcu</model>
+			<model>fwu</model>
+			<model>wire_in</model>
+			<model>wire_out</model>
+			<model>wire_inout</model>
+			<model>browregfile</model>
+			<model>dummy_register</model>
+		</class>
+	</library>
+</FHM_Structure>
