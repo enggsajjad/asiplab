@@ -1,9 +1,0 @@
-PATH=/adm/License-Server/ASIPmeister/jre1.8.0_121/bin:$PATH
-PATH=/Software/epp/ASIPmeister145/ASIPmeister/bin:$PATH
-ASIP_APDEV_SRCROOT=/Software/epp/ASIPmeister145/ASIP_APs
-LM_LICENSE_FILE=29000@i83pdc.ira.uka.de
-ASIPS_LICENSE=29000@i83pdc.ira.uka.de
-export PATH
-export ASIP_APDEV_SRCROOT
-export LM_LICENSE_FILE
-export ASIPS_LICENSE

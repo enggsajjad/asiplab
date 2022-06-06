@@ -1,7 +1,0 @@
-#!/bin/sh
-# Copyright 2008 ASIP Solutions, Inc. All rights reserved.
-
-awk '{print "@" $1 " " $2}' TestData.IM > TestData.IM.mem
-awk '{print "@" $1 " " $2}' TestData.DM > TestData.DM.mem
-
-
